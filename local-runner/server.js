@@ -1,10 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
-const { exec } = require("child_process");
 const AdmZip = require("adm-zip");
 const { XMLParser } = require("fast-xml-parser");
-const { execSync } = require("child_process");
+const { exec } = require("child_process");
 const path = require("path");
 
 const app = express();
@@ -39,7 +38,7 @@ async function mappingFailedTests() {
       if (tc.failure) {
         // Split JUnit name into feature + scenario
         const [featureName, scenarioName] = tc["@_name"].split(" › ").map((s) => s.trim());
-        failedSpecs.add(scenarioName); // only scenario
+        failedSpecs.add(featureName + " " + scenarioName); // only scenario
         failedTests.push({
           classname: tc["@_classname"], // path like Features/example.feature.spec.js
           featureName,
@@ -51,19 +50,32 @@ async function mappingFailedTests() {
 
   // Step 2: Write failed-tests.txt
   fs.writeFileSync(FAILED_FILE, [...failedSpecs].join("\n"));
-  console.log(`✅ Failed tests written to ${FAILED_FILE}`);
+}
+
+function runPlaywright(title) {
+  return new Promise((resolve) => {
+    const child = exec(`npx playwright test --grep "${title}"`, { cwd: config.playwrightRepoPath }, (err, stdout, stderr) => {
+      if (err) {
+        console.log("❌ Test failed (but server continues)");
+      }
+      console.log(stdout);
+    });
+  });
 }
 
 async function rerunfailedTests() {
   const failedTests = fs.readFileSync(path.join(UTIL, "failed-tests", "tests.txt"), "utf8").split("\n").filter(Boolean);
 
-  failedTests.forEach((title) => {
-    console.log(`\n🔹 Running: ${title}`);
-    execSync(`npx playwright test --grep "${title}" --debug`, {
-      cwd: config.playwrightRepoPath,
-      stdio: "inherit",
-    });
-  });
+  const results = [];
+
+  for (const title of failedTests) {
+    console.log(`\n🔹 Re-running: ${title}`);
+    const result = await runPlaywright(title);
+    results.push(result);
+  }
+
+  console.log("\n🧪 RERUN SUMMARY");
+  results.forEach((r) => console.log(`${r.success ? "✅" : "❌"} ${r.title}`));
 }
 
 app.post("/rerun", async (req, res) => {
@@ -78,35 +90,9 @@ app.post("/rerun", async (req, res) => {
 
     mappingFailedTests();
     rerunfailedTests();
-
-    // const suite = report.testsuites.testsuite;
-    // const cases = Array.isArray(suite.testcase) ? suite.testcase : [suite.testcase];
-    // console.log("4✅ Test cases extracted");
-
-    // const failed = cases.filter((tc) => tc.failure).map((tc) => tc["@_name"]);
-    // console.log("5✅ Failed test cases identified");
-
-    // if (!failed.length) {
-    //   return res.json({ status: "NO_FAILURES" });
-    // }
-
-    // const grep = failed.join("|").replace(/"/g, '\\"');
-
-    // exec(
-    //   `npx playwright test --grep "${grep}"`,
-    //   {
-    //     cwd: config.playwrightRepoPath,
-    //   },
-    //   (err, stdout, stderr) => {
-    //     if (err) {
-    //       return res.json({ status: "FAILED", logs: stderr });
-    //     }
-    //     res.json({ status: "SUCCESS", logs: stdout });
-    //   }
-    // );
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-app.listen(4000, () => console.log("✅ Local Runner listening on http://localhost:4000"));
+app.listen(4000, () => console.log("✅ Local Runner listening on port 4000"));
