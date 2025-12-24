@@ -1,32 +1,92 @@
-import { useEffect, useState } from 'react';
-import { getBuilds, rerun } from './api';
+import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 
-export default function App() {
-  const [builds, setBuilds] = useState<any[]>([]);
-  const [build, setBuild] = useState<number | null>(null);
-  const [log, setLog] = useState('');
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
+import type { JSX } from "react";
 
-  useEffect(() => {
-    getBuilds().then(setBuilds);
-  }, []);
+/* ---------------------------
+   Route Protection
+---------------------------- */
+function ProtectedRoute({ children }: { children: JSX.Element }) {
+  const { user } = useAuth();
+  return user ? children : <Navigate to="/login" replace />;
+}
 
-  async function handle(buildId: number) {
-    const r = await rerun(buildId);
-    console.log(r);
-    setLog(r.logs || r.status);
-  }
+/* ---------------------------
+   Public Layout (Login/Register)
+---------------------------- */
+function PublicLayout({ children }: { children: JSX.Element }) {
+  const { user } = useAuth();
+  if (user) return <Navigate to="/dashboard" replace />;
+  return children;
+}
 
+/* ---------------------------
+   App Routes
+---------------------------- */
+function AppRoutes() {
   return (
-    <div style={{ padding: 20 }}>
-      <h2>CI Rerun Failed Tests</h2>
-      <select onChange={e => setBuild(Number(e.target.value))} defaultValue="">
-        <option value="" disabled>-- select --</option>
-        {builds.map(b => (
-          <option key={b.id} value={b.id}>Build #{b.id} - {b.result}</option>
-        ))}
-      </select>
-      <button disabled={build === null} onClick={() => handle(build!)}>Rerun Failed Tests</button>
-      <pre>{log}</pre>
-    </div>
+    <Routes>
+      {/* Default */}
+      <Route path="/" element={<Navigate to="/login" replace />} />
+
+      {/* Login */}
+      <Route
+        path="/login"
+        element={
+          <PublicLayout>
+            <>
+              <Login />
+              <p>
+                New user? <Link to="/register">Register here</Link>
+              </p>
+            </>
+          </PublicLayout>
+        }
+      />
+
+      {/* Register */}
+      <Route
+        path="/register"
+        element={
+          <PublicLayout>
+            <>
+              <Register />
+              <p>
+                Already registered? <Link to="/login">Login</Link>
+              </p>
+            </>
+          </PublicLayout>
+        }
+      />
+
+      {/* Dashboard */}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Catch-all */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
+  );
+}
+
+/* ---------------------------
+   Root App
+---------------------------- */
+export default function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </AuthProvider>
   );
 }

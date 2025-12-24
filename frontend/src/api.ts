@@ -1,11 +1,22 @@
 const url = import.meta.env.VITE_SERVER_URL;
 
-export async function getBuilds() {
-  return fetch(`${url}/builds`).then(r => r.json());
-}
+export const getProjects = async (user: any) =>
+  fetch(`${url}/projects`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user })
+  }).then(r => r.json());
 
-export async function rerun(buildId: number) {
-  await fetch(`${url}/download/${buildId}`, { method: 'POST' });
-  return fetch('http://localhost:4000/rerun', { method: 'POST' })
-    .then(r => r.json());
-}
+export const getBuilds = async (user: any, projectId: string) =>
+  fetch(`${url}/builds?project=${projectId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user, projectId })
+  }).then(r => r.json());
+
+export const rerun = async (user: any, projectId: string, buildId: number) =>
+  fetch(`http://localhost:4000/rerun`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user, projectId, buildId })
+  }).then(r => r.json());
