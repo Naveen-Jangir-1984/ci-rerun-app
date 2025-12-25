@@ -31,6 +31,26 @@ app.get("/teams", (_, res) => {
   res.json(loadDB().teams);
 });
 
+/* ---------------- Users ---------------- */
+app.get("/users", (req, res) => {
+  const { team } = req.query;
+
+  if (!team) {
+    return res.status(400).json({ error: "team is required" });
+  }
+
+  const db = loadDB();
+
+  const users = db.users
+    .filter((u) => u.team === team)
+    .map((u) => ({
+      id: u.id,
+      username: u.username,
+    }));
+
+  res.json(users);
+});
+
 /* ---------------- Register ---------------- */
 app.post("/register", async (req, res) => {
   const { team, username, firstName, lastName, password } = req.body;
@@ -80,28 +100,62 @@ app.post("/login", async (req, res) => {
   res.json(safeUser);
 });
 
-/* ---------------- Update Profile ---------------- */
-app.put("/user/:id", (req, res) => {
-  const db = loadDB();
-  const idx = db.users.findIndex((u) => u.id === req.params.id);
+/* ---------------- Get Profile ---------------- */
+app.get("/profile/:userId", (req, res) => {
+  const { userId } = req.params;
 
-  if (idx === -1) {
+  const db = loadDB();
+  const user = db.users.find((u) => u.id === userId);
+
+  if (!user) return res.status(404).json({ error: "User not found" });
+
+  res.json({
+    userId: user.id,
+    username: user.username,
+    team: user.team,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    hasPAT: Boolean(user.pat), // 🔒 never send PAT itself
+  });
+});
+
+/* ---------------- Update Password ---------------- */
+app.put("/password", async (req, res) => {
+  const { userId, current, password } = req.body;
+
+  const db = loadDB();
+  const user = db.users.find((u) => u.id === userId);
+
+  if (!user) {
     return res.status(404).json({ error: "User not found" });
   }
 
-  if (req.body.pat !== undefined) {
-    req.body.pat = encryptPAT(req.body.pat);
+  const isValid = await verifyPassword(current, user.password);
+  if (!isValid) {
+    return res.status(401).json({ error: "Current password is incorrect" });
   }
 
-  db.users[idx] = {
-    ...db.users[idx],
-    ...req.body,
-  };
-
+  user.password = await hashPassword(password);
   saveDB(db);
 
-  const { password: _, ...safeUser } = db.users[idx];
-  res.json(safeUser);
+  res.json({ status: "UPDATED" });
+});
+
+/* ---------------- Update Profile ---------------- */
+app.put("/profile", async (req, res) => {
+  const { userId, firstName, lastName, pat } = req.body;
+
+  const db = loadDB();
+  const user = db.users.find((u) => u.id === userId);
+
+  if (!user) return res.status(404).json({ error: "User not found" });
+
+  if (firstName) user.firstName = firstName;
+  if (lastName) user.lastName = lastName;
+  if (pat) user.pat = encryptPAT(pat, user.id);
+
+  saveDB(db);
+  res.json({ user });
 });
 
 app.post("/projects", async (req, res) => {

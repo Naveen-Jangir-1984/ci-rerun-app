@@ -8,6 +8,11 @@ export function AuthProvider({ children }: any) {
     JSON.parse(localStorage.getItem("user") || "null")
   );
 
+  const reflectUserChanges = (updatedUser: any) => {
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+    setUser(updatedUser);
+  };
+
   async function register(data: any) {
     await registerUser(data);
   }
@@ -30,7 +35,7 @@ async function updateProfile(data: any) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, register, updateProfile, logout }}>
+    <AuthContext.Provider value={{ user, login, register, reflectUserChanges, updateProfile, logout }}>
       {children}
     </AuthContext.Provider>
   );

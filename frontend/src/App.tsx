@@ -1,10 +1,12 @@
+import type { JSX } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
-import Login from "./pages/Login";
-import Register from "./pages/Register";
+import Login from "./pages/Signin";
+import Register from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
-import type { JSX } from "react";
+import Profile from "./pages/Profile";
+import Password from "./pages/Password";
 
 /* ---------------------------
    Route Protection
@@ -40,7 +42,7 @@ function AppRoutes() {
             <>
               <Login />
               <p>
-                New user? <Link to="/register">Register here</Link>
+                New user? <Link to="/register">Sign Up</Link>
               </p>
             </>
           </PublicLayout>
@@ -55,7 +57,7 @@ function AppRoutes() {
             <>
               <Register />
               <p>
-                Already registered? <Link to="/login">Login</Link>
+                Already registered? <Link to="/login">Sign In</Link>
               </p>
             </>
           </PublicLayout>
@@ -70,6 +72,26 @@ function AppRoutes() {
             <Dashboard />
           </ProtectedRoute>
         }
+      />
+
+      {/* Change Profile */}
+      <Route
+        path="/changeProfile"
+        element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+      />
+
+      {/* Change Password */}
+      <Route
+        path="/changePassword"
+        element={
+            <ProtectedRoute>
+              <Password />
+            </ProtectedRoute>
+          }
       />
 
       {/* Catch-all */}

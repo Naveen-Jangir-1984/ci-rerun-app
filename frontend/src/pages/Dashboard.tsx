@@ -1,44 +1,42 @@
 import { useEffect, useState } from "react";
 import { getProjects, getBuilds, rerun } from "../api";
 import { useAuth } from "../context/AuthContext";
-import Settings from "./Settings";
+import Header from "../components/Header";
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const [projects, setProjects] = useState<any[]>([]);
+  const [project, setProject] = useState<string | null>(null);
+
+  const [builds, setBuilds] = useState<any[]>([]);
+  const [build, setBuild] = useState<number | null>(null);
+
+  const [log, setLog] = useState("");
   const hasPAT = !!user?.pat;
-    const [projects, setProjects] = useState<any[]>([]);
-    const [project, setProject] = useState<string | null>(null);
-  
-    const [builds, setBuilds] = useState<any[]>([]);
-    const [build, setBuild] = useState<number | null>(null);
-  
-    const [log, setLog] = useState("");
-  
-    /* Load projects on page load */
-    useEffect(() => {
-      getProjects(user).then(setProjects);
-    }, []);
-  
-    /* Load builds when project changes */
-    useEffect(() => {
-      if (!project) return;
-      setBuild(null);
-      setBuilds([]);
-      getBuilds(user, project).then(setBuilds);
-    }, [project]);
-  
-    async function handleRerun() {
-      if (!project || !build) return;
-      const r = await rerun(user.username, project, build);
-      setLog(r.logs || r.status);
-    }
+
+  /* Load projects on page load */
+  useEffect(() => {
+    getProjects(user).then(setProjects);
+  }, []);
+
+  /* Load builds when project changes */
+  useEffect(() => {
+    if (!project) return;
+    setBuild(null);
+    setBuilds([]);
+    getBuilds(user, project).then(setBuilds);
+  }, [project]);
+
+  async function handleRerun() {
+    if (!project || !build) return;
+    const r = await rerun(user.username, project, build);
+    setLog(r.logs || r.status);
+  }
 
   return (
     <>
-      <h2>Dashboard</h2>
-      <p>Welcome {user?.firstName}</p>
-      <button onClick={logout}>Logout</button>
       <h2>CI Rerun Failed Tests</h2>
+      <Header />
 
       {/* Project selector */}
       <div>
@@ -82,8 +80,6 @@ export default function Dashboard() {
       <pre style={{ marginTop: 20 }}>{log}</pre>
 
       {!hasPAT && <p style={{ color: "red" }}>Add PAT in Settings to enable projects</p>}
-
-      <Settings />
     </>
   );
 }

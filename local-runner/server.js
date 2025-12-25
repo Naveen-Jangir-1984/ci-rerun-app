@@ -90,6 +90,8 @@ app.post("/rerun", async (req, res) => {
 
     mappingFailedTests();
     rerunfailedTests();
+
+    res.json({ status: "Please check your local-runner node console for result." });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
