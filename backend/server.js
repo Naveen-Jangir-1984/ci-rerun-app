@@ -260,43 +260,36 @@ app.post("/builds", async (req, res) => {
 
 /* ---------------- Download Report -------- */
 app.post("/download", async (req, res) => {
-  try {
-    const { user, projectId, buildId } = req.body;
-    if (!projectId || !buildId) {
-      return res.status(400).json({ error: "project & buildId required" });
-    }
+  const { user, projectId, buildId } = req.body;
 
-    const base = `https://dev.azure.com/${process.env.AZURE_ORG}/${projectId}`;
-    const artifactsUrl = `${base}/_apis/build/builds/${buildId}/artifacts?api-version=7.1-preview.5`;
+  const base = `https://dev.azure.com/${process.env.AZURE_ORG}/${projectId}`;
+  const artifactsUrl = `${base}/_apis/build/builds/${buildId}/artifacts?api-version=7.1-preview.5`;
 
-    const authHeader = {
-      Authorization: "Basic " + Buffer.from(`:${decryptPAT(user.pat)}`).toString("base64"),
-    };
-    const artifactsRes = await axios.get(artifactsUrl, {
-      headers: authHeader,
-    });
+  const authHeader = {
+    Authorization: "Basic " + Buffer.from(`:${decryptPAT(user.pat)}`).toString("base64"),
+  };
+  const artifactsRes = await axios.get(artifactsUrl, {
+    headers: authHeader,
+  });
 
-    const artifact = artifactsRes.data.value.find((a) => a.name === "junit-xml");
+  const artifact = artifactsRes.data.value.find((a) => a.name === "junit-xml");
 
-    if (!artifact) {
-      return res.status(404).json({ error: "junit-xml artifact not found" });
-    }
-
-    const zipRes = await axios.get(artifact.resource.downloadUrl, {
-      headers: authHeader,
-      responseType: "arraybuffer",
-    });
-
-    const utilitiesDir = path.join(process.cwd(), "../local-runner/Utilities");
-    fs.mkdirSync(utilitiesDir, { recursive: true });
-
-    const zipPath = path.join(utilitiesDir, "junit.zip");
-    fs.writeFileSync(zipPath, zipRes.data);
-
-    res.json({ status: "DOWNLOADED", zipPath });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+  if (!artifact) {
+    return res.json({ status: 404, error: "junit-xml artifact not found" });
   }
+
+  const zipRes = await axios.get(artifact.resource.downloadUrl, {
+    headers: authHeader,
+    responseType: "arraybuffer",
+  });
+
+  const utilitiesDir = path.join(process.cwd(), "../local-runner/Utilities");
+  fs.mkdirSync(utilitiesDir, { recursive: true });
+
+  const zipPath = path.join(utilitiesDir, "junit.zip");
+  fs.writeFileSync(zipPath, zipRes.data);
+
+  res.json({ status: 200, zipPath });
 });
 
 app.listen(3001, () => console.log("✅ Backend running on port 3001"));

@@ -78,9 +78,12 @@ export default function Dashboard() {
   }
 
   async function handleRerun(mode: string) {
-    if (!project || !build) return;
     const res = await rerun(user, project, build, mode);
-    setMessage(res.status);
+    if (res.status === 200) {
+      setMessage(res.data);
+    } else {
+      setMessage(res.error);
+    }
   }
 
   return (
@@ -133,7 +136,7 @@ export default function Dashboard() {
         </button>
       </div>
 
-      <pre style={{ marginTop: 20 }}>{message}</pre>
+      <div style={{ marginTop: 20, color: message.includes("junit-xml") ? "red" : "green" }}>{message}</div>
 
       {!hasPAT && <p style={{ color: "red" }}>Add PAT in Settings to enable projects</p>}
     </>

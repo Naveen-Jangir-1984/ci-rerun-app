@@ -47,6 +47,7 @@ async function mappingFailedTests() {
       }
     });
   });
+  console.log(failedTests);
 
   // Step 2: Write failed-tests.txt
   fs.writeFileSync(FAILED_FILE, [...failedSpecs].join("\n"));
@@ -80,23 +81,19 @@ async function rerunfailedTests(mode) {
 }
 
 app.post("/rerun", async (req, res) => {
-  try {
-    const { mode } = req.body;
-    const zipPath = path.join(UTIL, "junit.zip");
-    const extractDir = path.join(UTIL, "extracted");
+  const { mode } = req.body;
+  const zipPath = path.join(UTIL, "junit.zip");
+  const extractDir = path.join(UTIL, "extracted");
 
-    fs.rmSync(extractDir, { recursive: true, force: true });
-    fs.mkdirSync(extractDir, { recursive: true });
+  fs.rmSync(extractDir, { recursive: true, force: true });
+  fs.mkdirSync(extractDir, { recursive: true });
 
-    new AdmZip(zipPath).extractAllTo(extractDir, true);
+  new AdmZip(zipPath).extractAllTo(extractDir, true);
 
-    mappingFailedTests();
-    rerunfailedTests(mode);
+  mappingFailedTests();
+  rerunfailedTests(mode);
 
-    res.json({ status: mode === "debug" ? "Please check if browser and debug console is opened." : "Please check your local-runner console for rerun progress/result." });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+  res.json({ status: 200, data: mode === "debug" ? "Please check if browser and debug console are opened." : "Please check local-runner console for rerun progress/result." });
 });
 
 app.listen(4000, () => console.log("✅ Local Runner listening on port 4000"));

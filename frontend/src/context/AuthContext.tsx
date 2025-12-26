@@ -17,12 +17,11 @@ export function AuthProvider({ children }: any) {
 
   async function login(team: string, username: string, password: string) {
     const res = await loginUser({ team, username, password });
-    if (res.status === 401) {
-      return res;
-    } else {
+    if (res.status === 200) {
       setUser(res.data);
       localStorage.setItem("user", JSON.stringify(res.data));
     }
+    return res;
   }
 
   async function updateProfile(data: any) {

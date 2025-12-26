@@ -70,17 +70,19 @@ export const getBuilds = async (user: any, projectId: string, range: string) =>
   }).then((r) => r.json());
 
 export const rerun = async (user: any, projectId: string, buildId: number, mode: string) => {
-  const r = await fetch(`${api}/download`, {
+  const res = await fetch(`${api}/download`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ user, projectId, buildId }),
   });
-  if (r.status === 404) {
-    return { status: "Artifacts not found for the selected build." };
+  const data = await res.json();
+  if (data.status === 404) {
+    return data;
+  } else {
+    return await fetch(`http://localhost:4000/rerun`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId, buildId, mode }),
+    }).then((r) => r.json());
   }
-  return await fetch(`http://localhost:4000/rerun`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ projectId, buildId, mode }),
-  }).then((r) => r.json());
 };
