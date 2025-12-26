@@ -1,18 +1,4 @@
 {
-  "teams": [
-    "Team 1",
-    "Team 2",
-    "Team 3"
-  ],
-  "users": [
-    {
-      "id": "bda23aa7-cb80-42a2-a4c9-34f8e64d8ccb",
-      "team": "Team 1",
-      "username": "njangir",
-      "firstName": "Naveen",
-      "lastName": "Jangir",
-      "password": "$2b$10$QtP7FhmNDbmZD.Xq2eyPq.y.JAH9yLoz47/oYiN9do7N0qBbFj3sm",
-      "pat": "d318e97f7d26845e4e5b0e2d6f7ac1d1:67916f99f66e9deb9c911e9f2f497e88149be0b92306f43f8bb62116acb6bd19b7a79fda6953b6a3a7ef21acfdec9f0569630a6d0477d7fb66d7b0654173e57cc7753f5c005b28c88fe9f8566f72c1c778020e80368d3ee7e3d5c5cc049c38b8"
-    }
-  ]
+  "teams": ["Team 1", "Team 2", "Team 3"],
+  "users": []
 }

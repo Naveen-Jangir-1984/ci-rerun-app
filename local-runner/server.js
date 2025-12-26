@@ -52,9 +52,10 @@ async function mappingFailedTests() {
   fs.writeFileSync(FAILED_FILE, [...failedSpecs].join("\n"));
 }
 
-function runPlaywright(title) {
+function runPlaywright(title, mode) {
+  const command = mode === "debug" ? `npx playwright test --debug --grep "${title}"` : `npx playwright test --grep "${title}"`;
   return new Promise((resolve) => {
-    const child = exec(`npx playwright test --grep "${title}"`, { cwd: config.playwrightRepoPath }, (err, stdout, stderr) => {
+    const child = exec(`${command}`, { cwd: config.playwrightRepoPath }, (err, stdout, stderr) => {
       if (err) {
         console.log("❌ Test failed (but server continues)");
       }
@@ -63,14 +64,14 @@ function runPlaywright(title) {
   });
 }
 
-async function rerunfailedTests() {
+async function rerunfailedTests(mode) {
   const failedTests = fs.readFileSync(path.join(UTIL, "failed-tests", "tests.txt"), "utf8").split("\n").filter(Boolean);
 
   const results = [];
 
   for (const title of failedTests) {
     console.log(`\n🔹 Re-running: ${title}`);
-    const result = await runPlaywright(title);
+    const result = await runPlaywright(title, mode);
     results.push(result);
   }
 
@@ -80,6 +81,7 @@ async function rerunfailedTests() {
 
 app.post("/rerun", async (req, res) => {
   try {
+    const { mode } = req.body;
     const zipPath = path.join(UTIL, "junit.zip");
     const extractDir = path.join(UTIL, "extracted");
 
@@ -89,9 +91,9 @@ app.post("/rerun", async (req, res) => {
     new AdmZip(zipPath).extractAllTo(extractDir, true);
 
     mappingFailedTests();
-    rerunfailedTests();
+    rerunfailedTests(mode);
 
-    res.json({ status: "Please check your local-runner node console for result." });
+    res.json({ status: mode === "debug" ? "Please check if browser and debug console is opened." : "Please check your local-runner console for rerun progress/result." });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

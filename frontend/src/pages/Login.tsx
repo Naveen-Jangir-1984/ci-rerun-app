@@ -9,6 +9,7 @@ export default function SignIn() {
   const nav = useNavigate();
   const [f, setF] = useState<any>({});
   const [users, setUsers] = useState<any[]>([]);
+  const [message, setMessage] = useState<string>("");
 
   useEffect(() => {
     getTeams().then(setTeams);
@@ -24,9 +25,9 @@ export default function SignIn() {
     getUsersByTeam(f.team).then(setUsers);
   }, [f.team]);
 
-  function submit() {
-    const ok = login(f.team, f.username, f.password);
-    if (!ok) alert("Invalid credentials");
+  async function submit() {
+    const res = await login(f.team, f.username, f.password);
+    if (res.status === 401) setMessage(res.error);
     else nav("/dashboard");
   }
 
@@ -35,24 +36,25 @@ export default function SignIn() {
   return (
     <>
       <h2>Sign In</h2>
-      <select onChange={e => setF({ ...f, team: e.target.value })}>
+      <select onChange={(e) => setF({ ...f, team: e.target.value })}>
         <option>Select Team</option>
-        {teams.map(t => <option key={t}>{t}</option>)}
+        {teams.map((t) => (
+          <option key={t}>{t}</option>
+        ))}
       </select>
-      <select
-        value={f.username}
-        onChange={e => setF({ ...f, username: e.target.value })}
-        disabled={!f.team}
-      >
+      <select value={f.username} onChange={(e) => setF({ ...f, username: e.target.value })} disabled={!f.team}>
         <option value="">-- Select User --</option>
-        {users.map(u => (
+        {users.map((u) => (
           <option key={u.id} value={u.username}>
             {u.username}
           </option>
         ))}
       </select>
-      <input type="password" disabled={!f.username} placeholder="Password" onChange={e => setF({ ...f, password: e.target.value })} />
-      <button disabled={isSubmitDisabled} style={{ cursor: isSubmitDisabled ? "not-allowed" : "pointer" }} onClick={submit}>Login</button>
+      <input type="password" disabled={!f.username} placeholder="Password" onChange={(e) => setF({ ...f, password: e.target.value })} />
+      <button disabled={isSubmitDisabled} style={{ cursor: isSubmitDisabled ? "not-allowed" : "pointer" }} onClick={submit}>
+        Login
+      </button>
+      <div style={{ marginTop: 20, color: "red" }}>{message}</div>
     </>
   );
 }

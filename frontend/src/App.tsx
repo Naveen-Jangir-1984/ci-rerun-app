@@ -2,8 +2,8 @@ import type { JSX } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
-import Login from "./pages/Signin";
-import Register from "./pages/SignUp";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Password from "./pages/Password";
@@ -78,20 +78,20 @@ function AppRoutes() {
       <Route
         path="/changeProfile"
         element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          }
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        }
       />
 
       {/* Change Password */}
       <Route
         path="/changePassword"
         element={
-            <ProtectedRoute>
-              <Password />
-            </ProtectedRoute>
-          }
+          <ProtectedRoute>
+            <Password />
+          </ProtectedRoute>
+        }
       />
 
       {/* Catch-all */}

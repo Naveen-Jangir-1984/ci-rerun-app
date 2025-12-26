@@ -1,45 +1,50 @@
 import { useState } from "react";
 import { updatePassword } from "../api";
+import { useAuth } from "../context/AuthContext";
 
 export default function Password() {
-  const session = JSON.parse(localStorage.getItem("session")!);
-
+  const { user } = useAuth();
   const [password, setPassword] = useState({
     current: "",
     password: "",
-    confirm: ""
+    confirm: "",
   });
+  const [message, setMessage] = useState("");
 
   function cancel() {
     window.history.back();
   }
 
   async function save() {
-    if( password.password !== password.confirm ) {
-      alert("New and Confirm Passwords do not match");
+    if (password.password !== password.confirm) {
+      setMessage("New and Confirm Passwords do not match");
       return;
     }
-    await updatePassword({
-      userId: session.userId,
+    const res = await updatePassword({
+      userId: user.id,
       current: password.current,
-      password: password.password
+      password: password.password,
     });
-
-    alert("Password updated");
-    setPassword({ current: "", password: "", confirm: "" });
-    cancel();
+    if (res.status === 200) {
+      setMessage("Password updated successfully");
+      setPassword({ current: "", password: "", confirm: "" });
+      setTimeout(() => cancel(), 2000);
+    }
   }
 
   const isUpdateDisabled = !password.current || !password.password || !password.confirm;
 
   return (
     <>
-      <input placeholder="Current" onChange={e => setPassword({ ...password, current: e.target.value })} />
-      <input placeholder="New" onChange={e => setPassword({ ...password, password: e.target.value })} />
-      <input placeholder="Confirm" onChange={e => setPassword({ ...password, confirm: e.target.value })} />
+      <input placeholder="Current" onChange={(e) => setPassword({ ...password, current: e.target.value })} />
+      <input placeholder="New" onChange={(e) => setPassword({ ...password, password: e.target.value })} />
+      <input placeholder="Confirm" onChange={(e) => setPassword({ ...password, confirm: e.target.value })} />
 
       <button onClick={cancel}>Cancel</button>
-      <button disabled={isUpdateDisabled} onClick={save}>Update</button>
+      <button disabled={isUpdateDisabled} onClick={save}>
+        Update
+      </button>
+      <div style={{ marginTop: 20, color: message === "Password updated successfully" ? "green" : "red" }}>{message}</div>
     </>
   );
 }

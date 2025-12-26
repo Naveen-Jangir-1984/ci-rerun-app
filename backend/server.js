@@ -26,12 +26,53 @@ function saveDB(db) {
   fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
 }
 
-/* ---------------- Teams ---------------- */
+function getDateRange(range) {
+  const now = new Date();
+  let from, to;
+
+  switch (range) {
+    case "yesterday":
+      from = new Date();
+      from.setDate(from.getDate() - 1);
+      from.setHours(0, 0, 0, 0);
+      to = new Date(from);
+      to.setHours(23, 59, 59, 999);
+      break;
+
+    case "current_week":
+      from = new Date();
+      from.setDate(from.getDate() - from.getDay());
+      from.setHours(0, 0, 0, 0);
+      to = now;
+      break;
+
+    case "last_week":
+      from = new Date();
+      from.setDate(from.getDate() - from.getDay() - 7);
+      from.setHours(0, 0, 0, 0);
+      to = new Date(from);
+      to.setDate(to.getDate() + 6);
+      to.setHours(23, 59, 59, 999);
+      break;
+
+    case "current_month":
+      from = new Date(now.getFullYear(), now.getMonth(), 1);
+      to = now;
+      break;
+
+    default:
+      return null; // ❌ Invalid or missing filter
+  }
+
+  return { from, to };
+}
+
+/* ---------------- Teams ------------------ */
 app.get("/teams", (_, res) => {
   res.json(loadDB().teams);
 });
 
-/* ---------------- Users ---------------- */
+/* ---------------- Users ------------------ */
 app.get("/users", (req, res) => {
   const { team } = req.query;
 
@@ -51,20 +92,15 @@ app.get("/users", (req, res) => {
   res.json(users);
 });
 
-/* ---------------- Register ---------------- */
+/* ---------------- Register --------------- */
 app.post("/register", async (req, res) => {
   const { team, username, firstName, lastName, password } = req.body;
 
-  if (!team || !username || !password) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
-
   const db = loadDB();
-
   const exists = db.users.some((u) => u.team === team && u.username === username);
 
   if (exists) {
-    return res.status(409).json({ error: "User already exists" });
+    return res.json({ status: 409, error: "User already exists" });
   }
 
   const user = {
@@ -83,7 +119,7 @@ app.post("/register", async (req, res) => {
   res.json({ status: "REGISTERED" });
 });
 
-/* ---------------- Login ---------------- */
+/* ---------------- Login ------------------ */
 app.post("/login", async (req, res) => {
   const { team, username, password } = req.body;
 
@@ -92,15 +128,15 @@ app.post("/login", async (req, res) => {
   const user = db.users.find((u) => u.team === team && u.username === username);
 
   if (!user || !(await verifyPassword(password, user.password))) {
-    return res.status(401).json({ error: "Invalid credentials" });
+    return res.json({ status: 401, error: "Invalid credentials" });
   }
 
   // Never send password back
   const { password: _, ...safeUser } = user;
-  res.json(safeUser);
+  res.json({ status: 200, data: safeUser });
 });
 
-/* ---------------- Get Profile ---------------- */
+/* ---------------- Get Profile ------------ */
 app.get("/profile/:userId", (req, res) => {
   const { userId } = req.params;
 
@@ -119,16 +155,12 @@ app.get("/profile/:userId", (req, res) => {
   });
 });
 
-/* ---------------- Update Password ---------------- */
+/* ---------------- Update Password -------- */
 app.put("/password", async (req, res) => {
   const { userId, current, password } = req.body;
 
   const db = loadDB();
   const user = db.users.find((u) => u.id === userId);
-
-  if (!user) {
-    return res.status(404).json({ error: "User not found" });
-  }
 
   const isValid = await verifyPassword(current, user.password);
   if (!isValid) {
@@ -138,44 +170,47 @@ app.put("/password", async (req, res) => {
   user.password = await hashPassword(password);
   saveDB(db);
 
-  res.json({ status: "UPDATED" });
+  res.json({ status: 200 });
 });
 
-/* ---------------- Update Profile ---------------- */
+/* ---------------- Update Profile --------- */
 app.put("/profile", async (req, res) => {
   const { userId, firstName, lastName, pat } = req.body;
 
   const db = loadDB();
   const user = db.users.find((u) => u.id === userId);
 
-  if (!user) return res.status(404).json({ error: "User not found" });
-
   if (firstName) user.firstName = firstName;
   if (lastName) user.lastName = lastName;
   if (pat) user.pat = encryptPAT(pat, user.id);
 
   saveDB(db);
-  res.json({ user });
+  res.json({ status: 200, data: user });
 });
 
+/* ---------------- Get Projects ----------- */
 app.post("/projects", async (req, res) => {
-  try {
-    const { user } = req.body;
-    const authHeader = {
-      Authorization: "Basic " + Buffer.from(`:${decryptPAT(user.pat)}`).toString("base64"),
-    };
-    const url = `https://dev.azure.com/${process.env.AZURE_ORG}/_apis/projects?api-version=7.1-preview.4`;
-    const r = await axios.get(url, { headers: authHeader });
-    res.json(r.data.value);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+  const { user } = req.body;
+  const authHeader = {
+    Authorization: "Basic " + Buffer.from(`:${decryptPAT(user.pat)}`).toString("base64"),
+  };
+  const url = `https://dev.azure.com/${process.env.AZURE_ORG}/_apis/projects?api-version=7.1-preview.4`;
+  const r = await axios.get(url, { headers: authHeader });
+  res.json({ status: r.status, data: r.data.value });
 });
 
+/* ---------------- Get Builds ------------- */
 app.post("/builds", async (req, res) => {
   try {
     const { user } = req.body;
-    const { project } = req.query;
+    const { project, range } = req.query;
+
+    // ❌ No filter → no builds
+    const dateRange = getDateRange(range);
+    if (!dateRange) {
+      return res.json([]); // ✅ important change
+    }
+
     const authHeader = {
       Authorization: "Basic " + Buffer.from(`:${decryptPAT(user.pat)}`).toString("base64"),
     };
@@ -188,7 +223,11 @@ app.post("/builds", async (req, res) => {
     // 1. Get builds
     const buildsRes = await axios.get(`${base}/_apis/build/builds?api-version=7.1-preview.7`, { headers: authHeader });
 
-    const builds = buildsRes.data.value;
+    const builds = buildsRes.data.value.filter((b) => {
+      if (!b.finishTime) return false;
+      const finish = new Date(b.finishTime);
+      return finish >= dateRange.from && finish <= dateRange.to;
+    });
 
     // 2. Enrich with failed test count
     const enriched = await Promise.all(
@@ -219,16 +258,20 @@ app.post("/builds", async (req, res) => {
   }
 });
 
+/* ---------------- Download Report -------- */
 app.post("/download", async (req, res) => {
   try {
-    const { project, buildId } = req.body;
-    if (!project || !buildId) {
+    const { user, projectId, buildId } = req.body;
+    if (!projectId || !buildId) {
       return res.status(400).json({ error: "project & buildId required" });
     }
 
-    const base = `https://dev.azure.com/${process.env.AZURE_ORG}/${project}`;
+    const base = `https://dev.azure.com/${process.env.AZURE_ORG}/${projectId}`;
     const artifactsUrl = `${base}/_apis/build/builds/${buildId}/artifacts?api-version=7.1-preview.5`;
 
+    const authHeader = {
+      Authorization: "Basic " + Buffer.from(`:${decryptPAT(user.pat)}`).toString("base64"),
+    };
     const artifactsRes = await axios.get(artifactsUrl, {
       headers: authHeader,
     });

@@ -3,47 +3,93 @@ import { getProjects, getBuilds, rerun } from "../api";
 import { useAuth } from "../context/AuthContext";
 import Header from "../components/Header";
 
+const TIME_RANGES = [
+  { label: "Yesterday", value: "yesterday" },
+  { label: "Current Week", value: "current_week" },
+  { label: "Last Week", value: "last_week" },
+  { label: "Current Month", value: "current_month" },
+  { label: "Last Month", value: "last_month" },
+];
+
 export default function Dashboard() {
   const { user } = useAuth();
   const [projects, setProjects] = useState<any[]>([]);
-  const [project, setProject] = useState<string | null>(null);
+  const [project, setProject] = useState<string>("");
 
   const [builds, setBuilds] = useState<any[]>([]);
-  const [build, setBuild] = useState<number | null>(null);
+  const [range, setRange] = useState("");
+  const [build, setBuild] = useState<number>(0);
 
-  const [log, setLog] = useState("");
+  const [message, setMessage] = useState("");
   const hasPAT = !!user?.pat;
 
   /* Load projects on page load */
   useEffect(() => {
-    getProjects(user).then(setProjects);
+    const projects = async (user: any) => {
+      const res = await getProjects(user);
+      if (res.status === 200) {
+        setProjects(res.data);
+      } else {
+        setProjects([]);
+      }
+    };
+    projects(user);
   }, []);
 
   /* Load builds when project changes */
   useEffect(() => {
     if (!project) return;
-    setBuild(null);
+    setBuild(0);
     setBuilds([]);
-    getBuilds(user, project).then(setBuilds);
-  }, [project]);
+    getBuilds(user, project, range).then(setBuilds);
+    setMessage("");
+  }, [project, range]);
 
-  async function handleRerun() {
+  async function handleProjectChange(value: string) {
+    setMessage("");
+    if (!value) {
+      setProject("");
+      setRange("");
+      setBuilds([]);
+      setBuild(0);
+      return;
+    }
+    setProject(value);
+  }
+
+  async function handleRangeChange(value: string) {
+    setMessage("");
+    if (!value) {
+      setRange("");
+      setBuilds([]);
+      setBuild(0);
+      return;
+    }
+    setRange(value);
+  }
+
+  async function handleBuildChange(value: string) {
+    setMessage("");
+    if (!value) {
+      setBuild(0);
+      return;
+    }
+    setBuild(Number(value));
+  }
+
+  async function handleRerun(mode: string) {
     if (!project || !build) return;
-    const r = await rerun(user.username, project, build);
-    setLog(r.logs || r.status);
+    const res = await rerun(user, project, build, mode);
+    setMessage(res.status);
   }
 
   return (
     <>
-      <h2>CI Rerun Failed Tests</h2>
       <Header />
 
       {/* Project selector */}
       <div>
-        <select
-          onChange={(e) => setProject(e.target.value)}
-          defaultValue=""
-        >
+        <select disabled={projects.length === 0} onChange={(e) => handleProjectChange(e.target.value)} value={project}>
           <option value="">-- select project --</option>
           {projects.map((p) => (
             <option key={p.id} value={p.id}>
@@ -53,31 +99,41 @@ export default function Dashboard() {
         </select>
       </div>
 
+      {/* Time filter */}
+      <div style={{ marginTop: 10 }}>
+        <select value={range} disabled={!project} onChange={(e) => handleRangeChange(e.target.value)}>
+          <option value="">-- select range --</option>
+          {TIME_RANGES.map((r) => (
+            <option key={r.value} value={r.value}>
+              {r.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* Build selector */}
-      {project && (
-        <div style={{ marginTop: 10 }}>
-          <select
-            onChange={(e) => setBuild(Number(e.target.value))}
-            defaultValue=""
-          >
-            <option value="">-- select build --</option>
-            {builds.map((b) => (
-              <option key={b.buildId} style={{display: b.status === "completed" && b.result === "succeeded" ? "none" : "block"}} value={b.buildId}>
-                {b.pipelineName} (#{b.buildId})
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+      <div style={{ marginTop: 10 }}>
+        <select value={build} disabled={builds.length === 0} onChange={(e) => handleBuildChange(e.target.value)}>
+          <option value={0}>-- select build --</option>
+          {builds.map((b) => (
+            <option key={b.buildId} style={{ display: b.status === "completed" && b.result === "succeeded" ? "none" : "block" }} value={b.buildId}>
+              {b.pipelineName} (#{b.buildId})
+            </option>
+          ))}
+        </select>
+      </div>
 
       {/* Rerun button */}
       <div style={{ marginTop: 10 }}>
-        <button disabled={!project || !build} onClick={handleRerun}>
+        <button disabled={!project || !range || !build} onClick={() => handleRerun("rerun")}>
           Rerun Failed Tests
+        </button>
+        <button disabled={!project || !range || !build} onClick={() => handleRerun("debug")}>
+          Debug Failed Tests
         </button>
       </div>
 
-      <pre style={{ marginTop: 20 }}>{log}</pre>
+      <pre style={{ marginTop: 20 }}>{message}</pre>
 
       {!hasPAT && <p style={{ color: "red" }}>Add PAT in Settings to enable projects</p>}
     </>
