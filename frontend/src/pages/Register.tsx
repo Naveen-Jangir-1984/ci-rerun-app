@@ -45,7 +45,7 @@ export default function Register() {
   }
 
   return (
-    <>
+    <div style={{ display: "flex", flexDirection: "column", justifyContent: "flex-start", alignItems: "flex-start" }}>
       <h2>Sign Up</h2>
       <select value={form.team} onChange={(e) => setForm({ ...form, team: e.target.value })}>
         <option>Select Team</option>
@@ -62,6 +62,6 @@ export default function Register() {
         Register
       </button>
       <div style={{ marginTop: 20, color: message === "Registered successfully" ? "green" : "red" }}>{message}</div>
-    </>
+    </div>
   );
 }

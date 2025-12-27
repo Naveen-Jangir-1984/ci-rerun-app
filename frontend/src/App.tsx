@@ -8,6 +8,8 @@ import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Password from "./pages/Password";
 
+import "./App.css";
+
 /* ---------------------------
    Route Protection
 ---------------------------- */

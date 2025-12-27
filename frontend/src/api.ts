@@ -62,27 +62,28 @@ export const updatePassword = async (payload: { userId: string; current: string;
   return res.json();
 };
 
-export const getBuilds = async (user: any, projectId: string, range: string) =>
-  await fetch(`${api}/builds?project=${projectId}&range=${range}`, {
+export const getBuilds = async (user: any, projectId: string, range: string) => {
+  const res = await fetch(`${api}/builds?project=${projectId}&range=${range}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ user, projectId }),
-  }).then((r) => r.json());
+  });
+  return res.json();
+};
 
-export const rerun = async (user: any, projectId: string, buildId: number, mode: string) => {
-  const res = await fetch(`${api}/download`, {
+export const getTests = async (user: any, projectId: string, buildId: number) => {
+  const res = await fetch(`${api}/tests`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ user, projectId, buildId }),
   });
-  const data = await res.json();
-  if (data.status === 404) {
-    return data;
-  } else {
-    return await fetch(`http://localhost:4000/rerun`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId, buildId, mode }),
-    }).then((r) => r.json());
-  }
+  return res.json();
+};
+
+export const rerun = async (tests: any[], mode: string) => {
+  return await fetch(`http://localhost:4000/rerun`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tests, mode }),
+  }).then((r) => r.json());
 };

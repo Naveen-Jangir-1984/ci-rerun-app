@@ -47,7 +47,6 @@ async function mappingFailedTests() {
       }
     });
   });
-  console.log(failedTests);
 
   // Step 2: Write failed-tests.txt
   fs.writeFileSync(FAILED_FILE, [...failedSpecs].join("\n"));
@@ -65,33 +64,23 @@ function runPlaywright(title, mode) {
   });
 }
 
-async function rerunfailedTests(mode) {
-  const failedTests = fs.readFileSync(path.join(UTIL, "failed-tests", "tests.txt"), "utf8").split("\n").filter(Boolean);
-
+async function rerunfailedTests(tests, mode) {
   const results = [];
 
-  for (const title of failedTests) {
+  tests.forEach(async (test) => {
+    const title = `${test.featureName} ${test.scenarioName}`;
     console.log(`\n🔹 Re-running: ${title}`);
     const result = await runPlaywright(title, mode);
     results.push(result);
-  }
+  });
 
-  console.log("\n🧪 RERUN SUMMARY");
   results.forEach((r) => console.log(`${r.success ? "✅" : "❌"} ${r.title}`));
 }
 
 app.post("/rerun", async (req, res) => {
-  const { mode } = req.body;
-  const zipPath = path.join(UTIL, "junit.zip");
-  const extractDir = path.join(UTIL, "extracted");
+  const { tests, mode } = req.body;
 
-  fs.rmSync(extractDir, { recursive: true, force: true });
-  fs.mkdirSync(extractDir, { recursive: true });
-
-  new AdmZip(zipPath).extractAllTo(extractDir, true);
-
-  mappingFailedTests();
-  rerunfailedTests(mode);
+  rerunfailedTests(tests, mode);
 
   res.json({ status: 200, data: mode === "debug" ? "Please check if browser and debug console are opened." : "Please check local-runner console for rerun progress/result." });
 });

@@ -3,6 +3,8 @@ const express = require("express");
 const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
+const AdmZip = require("adm-zip");
+const { XMLParser } = require("fast-xml-parser");
 const cors = require("cors");
 const { hashPassword, verifyPassword, encryptPAT, decryptPAT } = require("./utils/crypto");
 
@@ -65,6 +67,45 @@ function getDateRange(range) {
   }
 
   return { from, to };
+}
+
+function getFailedTests() {
+  const EXTRACT_DIR = path.join(__dirname, "ExtractedReport", "junit-xml");
+
+  const junitFile = fs.readdirSync(EXTRACT_DIR).find((f) => f.endsWith(".xml"));
+
+  if (!junitFile) throw new Error("No JUnit XML found");
+
+  const xml = fs.readFileSync(path.join(EXTRACT_DIR, junitFile), "utf8");
+  const parser = new XMLParser({ ignoreAttributes: false });
+  const report = parser.parse(xml);
+
+  function asArray(v) {
+    if (!v) return [];
+    return Array.isArray(v) ? v : [v];
+  }
+
+  // Step 1: Extract failed testcases
+  // const failedSpecs = new Set();
+  const failedTests = [];
+  let counter = 0;
+  asArray(report.testsuites?.testsuite).forEach((suite) => {
+    asArray(suite.testcase).forEach((tc) => {
+      if (tc.failure) {
+        // Split JUnit name into feature + scenario
+        const [featureName, scenarioName] = tc["@_name"].split(" › ").map((s) => s.trim());
+        // failedSpecs.add(featureName + " " + scenarioName); // only scenario
+        failedTests.push({
+          id: ++counter,
+          classname: tc["@_classname"], // path like Features/example.feature.spec.js
+          featureName,
+          scenarioName,
+        });
+      }
+    });
+  });
+
+  return failedTests;
 }
 
 /* ---------------- Teams ------------------ */
@@ -252,14 +293,14 @@ app.post("/builds", async (req, res) => {
       })
     );
 
-    res.json(enriched);
+    res.json({ status: 200, data: enriched });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
 /* ---------------- Download Report -------- */
-app.post("/download", async (req, res) => {
+app.post("/tests", async (req, res) => {
   const { user, projectId, buildId } = req.body;
 
   const base = `https://dev.azure.com/${process.env.AZURE_ORG}/${projectId}`;
@@ -275,7 +316,7 @@ app.post("/download", async (req, res) => {
   const artifact = artifactsRes.data.value.find((a) => a.name === "junit-xml");
 
   if (!artifact) {
-    return res.json({ status: 404, error: "junit-xml artifact not found" });
+    return res.json({ status: 404, data: [], error: "junit-xml artifact not found" });
   }
 
   const zipRes = await axios.get(artifact.resource.downloadUrl, {
@@ -283,13 +324,23 @@ app.post("/download", async (req, res) => {
     responseType: "arraybuffer",
   });
 
-  const utilitiesDir = path.join(process.cwd(), "../local-runner/Utilities");
-  fs.mkdirSync(utilitiesDir, { recursive: true });
+  const utilitiesDirOnServer = path.join(process.cwd(), "./Utils");
+  fs.mkdirSync(utilitiesDirOnServer, { recursive: true });
+  const zipPathOnServer = path.join(utilitiesDirOnServer, "junit.zip");
+  fs.writeFileSync(zipPathOnServer, zipRes.data);
+  const failedTestDir = path.join(__dirname, "ExtractedReport");
 
-  const zipPath = path.join(utilitiesDir, "junit.zip");
-  fs.writeFileSync(zipPath, zipRes.data);
+  fs.rmSync(failedTestDir, { recursive: true, force: true });
+  fs.mkdirSync(failedTestDir, { recursive: true });
+  new AdmZip(zipPathOnServer).extractAllTo(failedTestDir, true);
+  const failedTests = getFailedTests() || [];
 
-  res.json({ status: 200, zipPath });
+  // const utilitiesDir = path.join(process.cwd(), "../local-runner/Utilities");
+  // fs.mkdirSync(utilitiesDir, { recursive: true });
+  // const zipPath = path.join(utilitiesDir, "junit.zip");
+  // fs.writeFileSync(zipPath, zipRes.data);
+
+  res.json({ status: 200, data: failedTests });
 });
 
 app.listen(3001, () => console.log("✅ Backend running on port 3001"));
