@@ -9,10 +9,10 @@ app.use(express.json());
 
 const config = JSON.parse(fs.readFileSync("./config.json", "utf8"));
 
-function runPlaywright(title, mode) {
+async function runPlaywright(title, mode) {
   const command = mode === "debug" ? `npx playwright test --debug --grep "${title}"` : `npx playwright test --grep "${title}"`;
-  return new Promise((resolve) => {
-    const child = exec(`${command}`, { cwd: config.playwrightRepoPath }, (err, stdout, stderr) => {
+  return new Promise(() => {
+    const child = exec(`${command}`, { cwd: config.playwrightRepoPath }, (err, stdout) => {
       if (err) {
         console.log("❌ Test failed (but server continues)");
       }
@@ -22,22 +22,18 @@ function runPlaywright(title, mode) {
 }
 
 async function rerunfailedTests(tests, mode) {
-  const results = [];
-
   tests.forEach(async (test) => {
     const title = `${test.featureName} ${test.scenarioName}`;
-    console.log(`\n🔹 Re-running: ${title}`);
+    console.log(`\n🔹 Running: ${test.featureName} ›› ${test.scenarioName}`);
     const result = await runPlaywright(title, mode);
-    results.push(result);
+    console.log(`${result.success ? "✅" : "❌"} ${result.title}`);
   });
-
-  results.forEach((r) => console.log(`${r.success ? "✅" : "❌"} ${r.title}`));
 }
 
 app.post("/rerun", async (req, res) => {
   const { tests, mode } = req.body;
 
-  rerunfailedTests(tests, mode);
+  await rerunfailedTests(tests, mode);
 
   res.json({ status: 200, data: mode === "debug" ? "Please check if browser and debug console are opened." : "Please check local-runner console for rerun progress/result." });
 });
