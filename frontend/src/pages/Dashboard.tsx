@@ -24,7 +24,7 @@ export default function Dashboard() {
   const [tests, setTests] = useState<any[]>([]);
   const [test, setTest] = useState<number>(0);
 
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState({ color: "", text: "" });
   const hasPAT = !!user?.pat;
 
   const [spinner, setSpinner] = useState(false);
@@ -41,12 +41,11 @@ export default function Dashboard() {
       }
       setSpinner(false);
     };
-    setMessage("");
+    setMessage({ color: "", text: "" });
     projects(user);
   }, [project]);
 
   async function handleProjectChange(value: string) {
-    setMessage("");
     if (!value) {
       setProject("");
       setRange("");
@@ -57,12 +56,12 @@ export default function Dashboard() {
       setRunAll(true);
       return;
     }
-    setMessage("");
+    setMessage({ color: "", text: "" });
     setProject(value);
   }
 
   async function handleRangeChange(value: string) {
-    setMessage("");
+    setMessage({ color: "", text: "" });
     if (!value) {
       setRange("");
       setBuilds([]);
@@ -73,15 +72,17 @@ export default function Dashboard() {
       return;
     }
     setSpinner(true);
-    setMessage("");
     setRange(value);
     const res = await getBuilds(user, project, value);
     setBuilds(res.data);
+    if (res.data.length === 0) {
+      setMessage({ color: "red", text: "No builds found for the selected range." });
+    }
     setSpinner(false);
   }
 
   async function handleBuildChange(value: string) {
-    setMessage("");
+    setMessage({ color: "", text: "" });
     if (!Number(value)) {
       setBuild(0);
       setTests([]);
@@ -90,7 +91,6 @@ export default function Dashboard() {
       return;
     }
     setSpinner(true);
-    setMessage("");
     setBuild(Number(value));
     const res = await getTests(user, project, Number(value));
     setTests(res.data);
@@ -98,10 +98,10 @@ export default function Dashboard() {
   }
 
   async function handleRunAllChange() {
+    setMessage({ color: "", text: "" });
     if (!runAll) {
       setTest(0);
     }
-    setMessage("");
     setRunAll(!runAll);
   }
 
@@ -109,9 +109,9 @@ export default function Dashboard() {
     setSpinner(true);
     const res = await rerun(runAll ? tests : (tests.filter((t) => t.id === test) as any[]), mode);
     if (res.status === 200) {
-      setMessage(res.data);
+      setMessage({ color: "green", text: res.data });
     } else {
-      setMessage(res.error);
+      setMessage({ color: "red", text: res.error });
     }
     setSpinner(false);
   }
@@ -190,7 +190,7 @@ export default function Dashboard() {
         </button>
       </div>
 
-      <div style={{ marginTop: 20, color: message.includes("junit-xml") ? "red" : "green" }}>{message}</div>
+      <div style={{ marginTop: 20, color: message.color }}>{message.text}</div>
 
       {!hasPAT && <p style={{ color: "red" }}>Add PAT in Settings to enable projects</p>}
       <div style={{ display: spinner ? "block" : "none", position: "absolute", top: 0, left: 0, width: "100vw", height: "100vh", backgroundColor: "lightgrey", opacity: "0.7" }}>

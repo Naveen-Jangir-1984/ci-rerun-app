@@ -324,15 +324,12 @@ app.post("/tests", async (req, res) => {
     responseType: "arraybuffer",
   });
 
-  const utilitiesDirOnServer = path.join(process.cwd(), "./Utils");
-  fs.mkdirSync(utilitiesDirOnServer, { recursive: true });
-  const zipPathOnServer = path.join(utilitiesDirOnServer, "junit.zip");
-  fs.writeFileSync(zipPathOnServer, zipRes.data);
-  const failedTestDir = path.join(__dirname, "ExtractedReport");
+  const extractionDir = path.join(process.cwd(), "ExtractedReport");
+  fs.mkdirSync(extractionDir, { recursive: true });
+  const zipPath = path.join(extractionDir, "junit.zip");
+  fs.writeFileSync(zipPath, zipRes.data);
 
-  fs.rmSync(failedTestDir, { recursive: true, force: true });
-  fs.mkdirSync(failedTestDir, { recursive: true });
-  new AdmZip(zipPathOnServer).extractAllTo(failedTestDir, true);
+  new AdmZip(zipPath).extractAllTo(extractionDir, true);
   const failedTests = getFailedTests() || [];
 
   res.json({ status: 200, data: failedTests });
