@@ -41,21 +41,9 @@ export default function Dashboard() {
       }
       setSpinner(false);
     };
+    setMessage("");
     projects(user);
   }, [project]);
-
-  /* Load builds when project changes */
-  // useEffect(() => {
-  //   if (!project) return;
-  //   setBuild(0);
-  //   setBuilds([]);
-  //   setSpinner(true);
-  //   setTests([]);
-  //   setTest(0);
-  //   setRunAll(true);
-  //   setMessage("");
-  //   setSpinner(false);
-  // }, [project, range]);
 
   async function handleProjectChange(value: string) {
     setMessage("");
@@ -69,6 +57,7 @@ export default function Dashboard() {
       setRunAll(true);
       return;
     }
+    setMessage("");
     setProject(value);
   }
 
@@ -84,6 +73,7 @@ export default function Dashboard() {
       return;
     }
     setSpinner(true);
+    setMessage("");
     setRange(value);
     const res = await getBuilds(user, project, value);
     setBuilds(res.data);
@@ -99,8 +89,9 @@ export default function Dashboard() {
       setRunAll(true);
       return;
     }
-    setBuild(Number(value));
     setSpinner(true);
+    setMessage("");
+    setBuild(Number(value));
     const res = await getTests(user, project, Number(value));
     setTests(res.data);
     setSpinner(false);
@@ -110,6 +101,7 @@ export default function Dashboard() {
     if (!runAll) {
       setTest(0);
     }
+    setMessage("");
     setRunAll(!runAll);
   }
 
@@ -167,7 +159,7 @@ export default function Dashboard() {
             <input id="runall" type="checkbox" disabled={builds.length === 0} checked={runAll} onChange={handleRunAllChange} />
             <label htmlFor="runall">Run All Tests</label>
           </>
-        ) : project && range && build ? (
+        ) : project && range && build && !spinner ? (
           <div style={{ marginTop: 10, color: "red" }}>Either there is no artifact found or there were no failures.</div>
         ) : (
           ""

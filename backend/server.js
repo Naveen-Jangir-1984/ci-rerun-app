@@ -335,11 +335,6 @@ app.post("/tests", async (req, res) => {
   new AdmZip(zipPathOnServer).extractAllTo(failedTestDir, true);
   const failedTests = getFailedTests() || [];
 
-  // const utilitiesDir = path.join(process.cwd(), "../local-runner/Utilities");
-  // fs.mkdirSync(utilitiesDir, { recursive: true });
-  // const zipPath = path.join(utilitiesDir, "junit.zip");
-  // fs.writeFileSync(zipPath, zipRes.data);
-
   res.json({ status: 200, data: failedTests });
 });
 
