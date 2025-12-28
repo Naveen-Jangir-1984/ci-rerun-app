@@ -33,6 +33,12 @@ function getDateRange(range) {
   let from, to;
 
   switch (range) {
+    case "today":
+      from = new Date();
+      from.setHours(0, 0, 0, 0);
+      to = now;
+      break;
+
     case "yesterday":
       from = new Date();
       from.setDate(from.getDate() - 1);
@@ -60,6 +66,12 @@ function getDateRange(range) {
     case "current_month":
       from = new Date(now.getFullYear(), now.getMonth(), 1);
       to = now;
+      break;
+
+    case "last_month":
+      from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      to = new Date(now.getFullYear(), now.getMonth(), 0);
+      to.setHours(23, 59, 59, 999);
       break;
 
     default:

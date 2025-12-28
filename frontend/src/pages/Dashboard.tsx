@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import Header from "../components/Header";
 
 const TIME_RANGES = [
+  { label: "Today", value: "today" },
   { label: "Yesterday", value: "yesterday" },
   { label: "Current Week", value: "current_week" },
   { label: "Last Week", value: "last_week" },
