@@ -58,6 +58,7 @@ async function runPlaywright(title, mode, env) {
 }
 
 async function rerunfailedTests(tests, mode, env) {
+  let results = [];
   for (const test of tests) {
     const title = buildPlaywrightTitle(test);
 
@@ -66,17 +67,19 @@ async function rerunfailedTests(tests, mode, env) {
     const result = await runPlaywright(title, mode, env);
 
     console.log(`${result.success ? "\n✅ PASSED" : "\n❌ FAILED"} → ${title}`);
+    results.push({ status: result.success ? "Passed" : "Failed", title: result.title, logs: result.logs });
   }
 
   console.log("\n🏁 Run completed.");
+  return results;
 }
 
 app.post("/rerun", async (req, res) => {
   const { tests, mode, env } = req.body;
 
-  await rerunfailedTests(tests, mode, env);
+  const r = await rerunfailedTests(tests, mode, env);
 
-  res.json({ status: 200, data: mode === "debug" ? "Please check if browser and debug console are opened." : "Please check local-runner console for rerun progress/result." });
+  res.json({ status: 200, data: r });
 });
 
 app.listen(4000, () => console.log("✅ Local Runner listening on port 4000"));

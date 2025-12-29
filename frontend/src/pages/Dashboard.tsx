@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getProjects, getBuilds, getTests, rerun } from "../api";
 import { useAuth } from "../context/AuthContext";
 import Header from "../components/Header";
+import AnsiToHtml from "ansi-to-html";
 
 const TIME_RANGES = [
   { label: "Today", value: "today" },
@@ -32,6 +33,7 @@ export default function Dashboard() {
   const [env, setEnv] = useState<string>("qa");
 
   const [message, setMessage] = useState({ color: "", text: "" });
+  const [result, setResult] = useState<any[]>([]);
   const hasPAT = !!user?.pat;
 
   const [spinner, setSpinner] = useState(false);
@@ -106,22 +108,58 @@ export default function Dashboard() {
   }
 
   async function handleRunAllChange() {
-    setMessage({ color: "", text: "" });
     if (!runAll) {
       setTest(0);
     }
+    setMessage({ color: "", text: "" });
     setRunAll(!runAll);
+    setResult([]);
+  }
+
+  function handleTestChange(value: number) {
+    setMessage({ color: "", text: "" });
+    setTest(value);
+    setResult([]);
   }
 
   async function handleRerun(mode: string) {
+    setMessage({ color: "green", text: "Rerun initiated successfully. Please wait for result..." });
     setSpinner(true);
     const res = await rerun(runAll ? tests : (tests.filter((t) => t.id === test) as any[]), mode);
     if (res.status === 200) {
-      setMessage({ color: "green", text: res.data });
+      setMessage({ color: "", text: "" });
+      setResult(res.data);
     } else {
       setMessage({ color: "red", text: res.error });
     }
     setSpinner(false);
+  }
+
+  const ansiConverter = new AnsiToHtml({
+    fg: "#FFF",
+    bg: "#FFF",
+    newline: true,
+    escapeXML: true,
+  });
+
+  function LogsViewer({ logs }: { logs: string }) {
+    const html = ansiConverter.toHtml(logs);
+
+    return (
+      <div
+        style={{
+          background: "#0f172a",
+          color: "#e5e7eb",
+          padding: "2rem",
+          fontFamily: "monospace",
+          fontSize: "13px",
+          overflowX: "auto",
+          borderRadius: "10px",
+          marginTop: "10px",
+        }}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    );
   }
 
   return (
@@ -177,7 +215,7 @@ export default function Dashboard() {
       {/* Failed Tests */}
       {!runAll && (
         <div style={{ marginTop: 10 }}>
-          <select value={test} disabled={tests.length === 0} onChange={(e) => setTest(Number(e.target.value))}>
+          <select value={test} disabled={tests.length === 0} onChange={(e) => handleTestChange(Number(e.target.value))}>
             <option value={0}>-- select test --</option>
             {tests.map((test) => (
               <option key={test.id} value={test.id}>
@@ -212,6 +250,14 @@ export default function Dashboard() {
       <div style={{ marginTop: 20, color: message.color }}>{message.text}</div>
 
       {!hasPAT && <p style={{ color: "red" }}>Add PAT in Settings to enable projects</p>}
+      {result.length > 0 &&
+        result.map((r, idx) => (
+          <div key={idx} style={{ marginTop: 10 }}>
+            <span>{`${r.title}`}</span>
+            <span style={{ color: r.status === "Passed" ? "green" : "red" }}>{` (${r.status})`}</span>
+            <LogsViewer logs={r.logs} />
+          </div>
+        ))}
       <div style={{ display: spinner ? "block" : "none", position: "absolute", top: 0, left: 0, width: "100vw", height: "100vh", backgroundColor: "lightgrey", opacity: "0.7" }}>
         <h3 style={{ display: "flex", width: "100%", height: "100%", justifyContent: "center", alignItems: "center" }}>Loading...</h3>
       </div>
