@@ -174,7 +174,7 @@ export default function Dashboard() {
             <option value={0}>-- test --</option>
             {tests.map((test) => (
               <option key={test.id} value={test.id}>
-                {`${test.featureName} - ${test.scenarioName}`}
+                {test.featureName} → {test.scenarioName} {test.example ? `(${test.example})` : ""}
               </option>
             ))}
           </select>

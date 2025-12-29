@@ -9,25 +9,58 @@ app.use(express.json());
 
 const config = JSON.parse(fs.readFileSync("./config.json", "utf8"));
 
-async function runPlaywright(title, mode) {
-  const command = mode === "debug" ? `npx playwright test --debug --grep "${title}"` : `npx playwright test --grep "${title}"`;
-  return new Promise(() => {
-    const child = exec(`${command}`, { cwd: config.playwrightRepoPath }, (err, stdout) => {
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildPlaywrightTitle(test) {
+  // Example-based scenario
+  if (test.example) {
+    return `${test.featureName} ${test.scenarioName} ${test.example}`;
+  }
+
+  // Normal scenario
+  return `${test.featureName} ${test.scenarioName}`;
+}
+
+async function runPlaywright(title, mode = "normal") {
+  const safeTitle = escapeRegex(title);
+  const cmd = mode === "debug" ? `npx playwright test --debug --grep "${safeTitle}"` : `npx playwright test --grep "${safeTitle}"`;
+
+  // console.log(`▶ CMD: ${cmd}`);
+
+  return new Promise((resolve) => {
+    exec(cmd, { cwd: config.playwrightRepoPath }, (err, stdout, stderr) => {
       if (err) {
-        console.log("❌ Test failed (but server continues)");
+        // console.log(stdout);
+        return resolve({
+          success: false,
+          title,
+          logs: stderr || stdout,
+        });
       }
-      console.log(stdout);
+
+      resolve({
+        success: true,
+        title,
+        logs: stdout,
+      });
     });
   });
 }
 
 async function rerunfailedTests(tests, mode) {
-  tests.forEach(async (test) => {
-    const title = `${test.featureName} ${test.scenarioName}`;
-    console.log(`\n🔹 Running: ${test.featureName} ›› ${test.scenarioName}`);
+  for (const test of tests) {
+    const title = buildPlaywrightTitle(test);
+
+    console.log(`\n🔹 Running: ${test.featureName} › ${test.scenarioName}` + (test.example ? ` › ${test.example}` : ""));
+
     const result = await runPlaywright(title, mode);
-    console.log(`${result.success ? "✅" : "❌"} ${result.title}`);
-  });
+
+    console.log(`${result.success ? "\n✅ PASSED" : "\n❌ FAILED"} → ${title}`);
+  }
+
+  console.log("\n🏁 Run completed.");
 }
 
 app.post("/rerun", async (req, res) => {

@@ -5,13 +5,12 @@ export const getTeams = async () => await fetch(`${api}/teams`).then((r) => r.js
 export const getUsersByTeam = async (team: string) => await fetch(`${api}/users?team=${encodeURIComponent(team)}`).then((r) => r.json());
 
 export const registerUser = async (data: { team: string; username: string; firstName: string; lastName: string; password: string }) => {
-  const r = await fetch(`${api}/register`, {
+  const res = await fetch(`${api}/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!r.ok) throw new Error("User already exists");
-  return r.json();
+  return res.json();
 };
 
 export const loginUser = async (data: { team: string; username: string; password: string }) => {
@@ -44,13 +43,12 @@ export const updateProfile = async (payload: { userId: string; firstName?: strin
 };
 
 export const updateUser = async (id: string, data: any) => {
-  const r = await fetch(`${api}/user/${id}`, {
+  const res = await fetch(`${api}/user/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!r.ok) throw new Error("Update failed");
-  return r.json();
+  return res.json();
 };
 
 export const updatePassword = async (payload: { userId: string; current: string; password: string }) => {

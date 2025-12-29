@@ -85,35 +85,49 @@ function getFailedTests() {
   const EXTRACT_DIR = path.join(__dirname, "ExtractedReport", "junit-xml");
 
   const junitFile = fs.readdirSync(EXTRACT_DIR).find((f) => f.endsWith(".xml"));
-
   if (!junitFile) throw new Error("No JUnit XML found");
 
   const xml = fs.readFileSync(path.join(EXTRACT_DIR, junitFile), "utf8");
   const parser = new XMLParser({ ignoreAttributes: false });
   const report = parser.parse(xml);
 
+  const failedTests = [];
+  let counter = 1;
   function asArray(v) {
     if (!v) return [];
     return Array.isArray(v) ? v : [v];
   }
 
-  // Step 1: Extract failed testcases
-  // const failedSpecs = new Set();
-  const failedTests = [];
-  let counter = 0;
   asArray(report.testsuites?.testsuite).forEach((suite) => {
     asArray(suite.testcase).forEach((tc) => {
-      if (tc.failure) {
-        // Split JUnit name into feature + scenario
-        const [featureName, scenarioName] = tc["@_name"].split(" › ").map((s) => s.trim());
-        // failedSpecs.add(featureName + " " + scenarioName); // only scenario
-        failedTests.push({
-          id: ++counter,
-          classname: tc["@_classname"], // path like Features/example.feature.spec.js
-          featureName,
-          scenarioName,
-        });
+      if (!tc.failure) return;
+
+      const name = tc["@_name"];
+      const classname = tc["@_classname"];
+
+      // Split on ›
+      const parts = name.split("›").map((p) => p.trim());
+
+      const featureName = parts[0];
+      let scenarioName = "";
+      let example = null;
+
+      if (parts.length === 3 && parts[2].startsWith("Example")) {
+        // Scenario Outline
+        scenarioName = parts[1];
+        example = parts[2]; // Example #3
+      } else {
+        // Normal Scenario
+        scenarioName = parts.slice(1).join(" › ");
       }
+
+      failedTests.push({
+        id: counter++,
+        classname,
+        featureName,
+        scenarioName,
+        example,
+      });
     });
   });
 
