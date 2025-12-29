@@ -55,6 +55,7 @@ export default function Dashboard() {
   }, [project]);
 
   async function handleProjectChange(value: string) {
+    setResult([]);
     if (!value) {
       setProject("");
       setRange("");
@@ -70,6 +71,7 @@ export default function Dashboard() {
   }
 
   async function handleRangeChange(value: string) {
+    setResult([]);
     setMessage({ color: "", text: "" });
     if (!value) {
       setRange("");
