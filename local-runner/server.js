@@ -23,39 +23,47 @@ function buildPlaywrightTitle(test) {
   return `${test.featureName} ${test.scenarioName}`;
 }
 
-async function runPlaywright(title, mode = "normal") {
+async function runPlaywright(title, mode, env) {
   const safeTitle = escapeRegex(title);
-  const cmd = mode === "debug" ? `npx playwright test --debug --grep "${safeTitle}"` : `npx playwright test --grep "${safeTitle}"`;
+  const cmd = `npx playwright test --grep "${safeTitle}"${mode === "debug" ? " --debug" : ""}`;
 
   // console.log(`▶ CMD: ${cmd}`);
 
   return new Promise((resolve) => {
-    exec(cmd, { cwd: config.playwrightRepoPath }, (err, stdout, stderr) => {
-      if (err) {
-        // console.log(stdout);
-        return resolve({
-          success: false,
+    exec(
+      cmd,
+      {
+        cwd: config.playwrightRepoPath,
+        env: Object.assign({}, process.env, {
+          TEST_ENV: env,
+        }),
+      },
+      (err, stdout, stderr) => {
+        if (err) {
+          // console.log(stdout);
+          return resolve({
+            success: false,
+            title,
+            logs: stderr || stdout,
+          });
+        }
+        resolve({
+          success: true,
           title,
-          logs: stderr || stdout,
+          logs: stdout,
         });
       }
-
-      resolve({
-        success: true,
-        title,
-        logs: stdout,
-      });
-    });
+    );
   });
 }
 
-async function rerunfailedTests(tests, mode) {
+async function rerunfailedTests(tests, mode, env) {
   for (const test of tests) {
     const title = buildPlaywrightTitle(test);
 
     console.log(`\n🔹 Running: ${test.featureName} › ${test.scenarioName}` + (test.example ? ` › ${test.example}` : ""));
 
-    const result = await runPlaywright(title, mode);
+    const result = await runPlaywright(title, mode, env);
 
     console.log(`${result.success ? "\n✅ PASSED" : "\n❌ FAILED"} → ${title}`);
   }
@@ -64,9 +72,9 @@ async function rerunfailedTests(tests, mode) {
 }
 
 app.post("/rerun", async (req, res) => {
-  const { tests, mode } = req.body;
+  const { tests, mode, env } = req.body;
 
-  await rerunfailedTests(tests, mode);
+  await rerunfailedTests(tests, mode, env);
 
   res.json({ status: 200, data: mode === "debug" ? "Please check if browser and debug console are opened." : "Please check local-runner console for rerun progress/result." });
 });

@@ -12,6 +12,11 @@ const TIME_RANGES = [
   { label: "Last Month", value: "last_month" },
 ];
 
+const ENVIRONMENTS = [
+  { label: "QA", value: "qa" },
+  { label: "STAGING", value: "stg" },
+];
+
 export default function Dashboard() {
   const { user } = useAuth();
   const [projects, setProjects] = useState<any[]>([]);
@@ -24,6 +29,7 @@ export default function Dashboard() {
 
   const [tests, setTests] = useState<any[]>([]);
   const [test, setTest] = useState<number>(0);
+  const [env, setEnv] = useState<string>("qa");
 
   const [message, setMessage] = useState({ color: "", text: "" });
   const hasPAT = !!user?.pat;
@@ -78,6 +84,7 @@ export default function Dashboard() {
     setBuilds(res.data);
     if (res.data.length === 0) {
       setMessage({ color: "red", text: "No builds found for the selected range." });
+      setRunAll(true);
     }
     setSpinner(false);
   }
@@ -171,7 +178,7 @@ export default function Dashboard() {
       {!runAll && (
         <div style={{ marginTop: 10 }}>
           <select value={test} disabled={tests.length === 0} onChange={(e) => setTest(Number(e.target.value))}>
-            <option value={0}>-- test --</option>
+            <option value={0}>-- select test --</option>
             {tests.map((test) => (
               <option key={test.id} value={test.id}>
                 {test.featureName} → {test.scenarioName} {test.example ? `(${test.example})` : ""}
@@ -181,12 +188,23 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Environment selector */}
+      <div style={{ marginTop: 10 }}>
+        <select value={env} disabled={(!runAll && test === 0) || tests.length === 0 || builds.length === 0} onChange={(e) => setEnv(e.target.value)}>
+          {ENVIRONMENTS.map((env) => (
+            <option key={env.value} value={env.value}>
+              {env.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* Rerun button */}
       <div style={{ marginTop: 10 }}>
-        <button disabled={(!runAll && test === 0) || tests.length === 0} onClick={() => handleRerun("rerun")}>
+        <button disabled={(!runAll && test === 0) || tests.length === 0 || builds.length === 0} onClick={() => handleRerun("rerun")}>
           Run
         </button>
-        <button disabled={(!runAll && test === 0) || tests.length === 0} onClick={() => handleRerun("debug")}>
+        <button disabled={(!runAll && test === 0) || tests.length === 0 || builds.length === 0} onClick={() => handleRerun("debug")}>
           Debug
         </button>
       </div>
