@@ -92,6 +92,7 @@ export default function Dashboard() {
   }
 
   async function handleBuildChange(value: string) {
+    setResult([]);
     setMessage({ color: "", text: "" });
     if (!Number(value)) {
       setBuild(0);
