@@ -82,8 +82,8 @@ function getDateRange(range) {
   return { from, to };
 }
 
-function getFailedTests() {
-  const EXTRACT_DIR = path.join(__dirname, "ExtractedReport", "junit-xml");
+function getFailedTests(artifactName) {
+  const EXTRACT_DIR = path.join(__dirname, "ExtractedReport", artifactName);
 
   const junitFile = fs.readdirSync(EXTRACT_DIR).find((f) => f.endsWith(".xml"));
   if (!junitFile) throw new Error("No JUnit XML found");
@@ -329,6 +329,7 @@ app.post("/builds", async (req, res) => {
 /* ---------------- Download Report -------- */
 app.post("/tests", async (req, res) => {
   const { user, projectId, buildId } = req.body;
+  const artifactName = "junit-xml";
 
   const base = `https://dev.azure.com/${process.env.AZURE_ORG}/${projectId}`;
   const artifactsUrl = `${base}/_apis/build/builds/${buildId}/artifacts?api-version=7.1-preview.5`;
@@ -340,10 +341,10 @@ app.post("/tests", async (req, res) => {
     headers: authHeader,
   });
 
-  const artifact = artifactsRes.data.value.find((a) => a.name === "junit-xml");
+  const artifact = artifactsRes.data.value.find((a) => a.name === artifactName);
 
   if (!artifact) {
-    return res.json({ status: 404, data: [], error: "junit-xml artifact not found" });
+    return res.json({ status: 404, data: [], error: `${artifactName} artifact not found` });
   }
 
   const zipRes = await axios.get(artifact.resource.downloadUrl, {
@@ -357,9 +358,10 @@ app.post("/tests", async (req, res) => {
   fs.writeFileSync(zipPath, zipRes.data);
 
   new AdmZip(zipPath).extractAllTo(extractionDir, true);
-  const failedTests = getFailedTests() || [];
+  const failedTests = getFailedTests(artifactName) || [];
 
   res.json({ status: 200, data: failedTests });
 });
 
-app.listen(3001, () => console.log("✅ Backend running on port 3001"));
+const server = app.listen(3001, () => console.log("✅ Backend running on port 3001"));
+server.timeout = 120000;
