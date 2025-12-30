@@ -76,7 +76,6 @@ async function rerunfailedTests(tests, mode, env) {
 
 app.post("/rerun", async (req, res) => {
   const { tests, mode, env } = req.body;
-  console.log(env);
 
   const r = await rerunfailedTests(tests, mode, env);
 
