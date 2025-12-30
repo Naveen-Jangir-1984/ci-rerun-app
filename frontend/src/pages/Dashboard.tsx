@@ -3,6 +3,7 @@ import { getProjects, getBuilds, getTests, rerun } from "../api";
 import { useAuth } from "../context/AuthContext";
 import Header from "../components/Header";
 import AnsiToHtml from "ansi-to-html";
+import stripAnsi from "strip-ansi";
 
 const TIME_RANGES = [
   { label: "Today", value: "today" },
@@ -126,12 +127,13 @@ export default function Dashboard() {
   }
 
   async function handleRerun(mode: string) {
+    setResult([]);
     setMessage({ color: "green", text: "Rerun initiated successfully. Please wait for result..." });
     setSpinner(true);
     const res = await rerun(runAll ? tests : (tests.filter((t) => t.id === test) as any[]), mode);
     if (res.status === 200) {
       setMessage({ color: "", text: "" });
-      setResult(res.data);
+      setResult(res.data.map((r: any) => ({ ...r, logs: cleanPlaywrightLogs(r.logs) })));
     } else {
       setMessage({ color: "red", text: res.error });
     }
@@ -145,14 +147,21 @@ export default function Dashboard() {
     escapeXML: true,
   });
 
+  function cleanPlaywrightLogs(logs: string) {
+    logs = stripAnsi(logs);
+    logs = logs.replace(/\r/g, "");
+    logs = logs.replace(/^(?:A\s?)+/gm, "");
+    return logs;
+  }
+
   function LogsViewer({ logs }: { logs: string }) {
-    const html = ansiConverter.toHtml(logs);
+    const html = ansiConverter.toHtml(cleanPlaywrightLogs(logs));
 
     return (
       <div
         style={{
-          background: "#0f172a",
-          color: "#e5e7eb",
+          background: "#000",
+          color: "#fff",
           padding: "2rem",
           fontFamily: "monospace",
           fontSize: "13px",
