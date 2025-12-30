@@ -78,10 +78,10 @@ export const getTests = async (user: any, projectId: string, buildId: number) =>
   return res.json();
 };
 
-export const rerun = async (tests: any[], mode: string) => {
+export const rerun = async (tests: any[], mode: string, env: string) => {
   return await fetch(`http://localhost:4000/rerun`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ tests, mode }),
+    body: JSON.stringify({ tests, mode, env }),
   }).then((r) => r.json());
 };

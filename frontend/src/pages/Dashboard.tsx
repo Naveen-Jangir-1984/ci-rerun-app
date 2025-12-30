@@ -130,7 +130,7 @@ export default function Dashboard() {
     setResult([]);
     setMessage({ color: "green", text: "Rerun initiated successfully. Please wait for result..." });
     setSpinner(true);
-    const res = await rerun(runAll ? tests : (tests.filter((t) => t.id === test) as any[]), mode);
+    const res = await rerun(runAll ? tests : (tests.filter((t) => t.id === test) as any[]), mode, env);
     if (res.status === 200) {
       setMessage({ color: "", text: "" });
       setResult(res.data.map((r: any) => ({ ...r, logs: cleanPlaywrightLogs(r.logs) })));
