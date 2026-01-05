@@ -63,9 +63,9 @@ export default function Dashboard() {
     setRange("");
     setBuilds([]);
     setBuild(0);
+    setRunAll(true);
     setTests([]);
     setTest(0);
-    setRunAll(true);
     setResult([]);
     if (!value) {
       setProject("");
@@ -75,15 +75,15 @@ export default function Dashboard() {
   }
 
   async function handleRangeChange(value: string) {
-    setResult([]);
     setMessage({ color: "", text: "" });
+    setBuilds([]);
+    setBuild(0);
+    setRunAll(true);
+    setTests([]);
+    setTest(0);
+    setResult([]);
     if (!value) {
       setRange("");
-      setBuilds([]);
-      setBuild(0);
-      setTests([]);
-      setTest(0);
-      setRunAll(true);
       return;
     }
     setSpinner({ visible: true, message: "Loading builds..." });
@@ -98,13 +98,13 @@ export default function Dashboard() {
   }
 
   async function handleBuildChange(value: string) {
+    setTests([]);
+    setTest(0);
+    setRunAll(true);
     setResult([]);
     setMessage({ color: "", text: "" });
     if (!Number(value)) {
       setBuild(0);
-      setTests([]);
-      setTest(0);
-      setRunAll(true);
       return;
     }
     setSpinner({ visible: true, message: "Loading failed tests..." });
@@ -115,12 +115,12 @@ export default function Dashboard() {
   }
 
   async function handleRunAllChange() {
+    setMessage({ color: "", text: "" });
+    setResult([]);
+    setRunAll(!runAll);
     if (!runAll) {
       setTest(0);
     }
-    setMessage({ color: "", text: "" });
-    setRunAll(!runAll);
-    setResult([]);
   }
 
   function handleTestChange(value: number) {
