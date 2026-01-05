@@ -110,7 +110,13 @@ export default function Dashboard() {
     setSpinner({ visible: true, message: "Loading failed tests..." });
     setBuild(Number(value));
     const res = await getTests(user, project, Number(value));
-    setTests(res.data);
+    if (res.data.length === 0) {
+      setMessage({ color: "red", text: "No failed tests extracted for the selected build." });
+      setRunAll(true);
+    } else {
+      setMessage({ color: "", text: "" });
+      setTests(res.data);
+    }
     setSpinner({ visible: false, message: "" });
   }
 
