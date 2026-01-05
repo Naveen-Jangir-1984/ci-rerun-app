@@ -37,37 +37,40 @@ export default function Dashboard() {
   const [result, setResult] = useState<any[]>([]);
   const hasPAT = !!user?.pat;
 
-  const [spinner, setSpinner] = useState(false);
+  const [spinner, setSpinner] = useState({
+    visible: false,
+    message: "",
+  });
 
   /* Load projects on page load */
   useEffect(() => {
     const projects = async (user: any) => {
-      setSpinner(true);
+      setSpinner({ visible: true, message: "Loading projects..." });
       const res = await getProjects(user);
       if (res.status === 200) {
         setProjects(res.data);
       } else {
         setProjects([]);
       }
-      setSpinner(false);
+      setSpinner({ visible: false, message: "" });
     };
     setMessage({ color: "", text: "" });
     projects(user);
   }, [project]);
 
   async function handleProjectChange(value: string) {
+    setMessage({ color: "", text: "" });
+    setRange("");
+    setBuilds([]);
+    setBuild(0);
+    setTests([]);
+    setTest(0);
+    setRunAll(true);
     setResult([]);
     if (!value) {
       setProject("");
-      setRange("");
-      setBuilds([]);
-      setBuild(0);
-      setTests([]);
-      setTest(0);
-      setRunAll(true);
       return;
     }
-    setMessage({ color: "", text: "" });
     setProject(value);
   }
 
@@ -83,7 +86,7 @@ export default function Dashboard() {
       setRunAll(true);
       return;
     }
-    setSpinner(true);
+    setSpinner({ visible: true, message: "Loading builds..." });
     setRange(value);
     const res = await getBuilds(user, project, value);
     setBuilds(res.data);
@@ -91,7 +94,7 @@ export default function Dashboard() {
       setMessage({ color: "red", text: "No builds found for the selected range." });
       setRunAll(true);
     }
-    setSpinner(false);
+    setSpinner({ visible: false, message: "" });
   }
 
   async function handleBuildChange(value: string) {
@@ -104,11 +107,11 @@ export default function Dashboard() {
       setRunAll(true);
       return;
     }
-    setSpinner(true);
+    setSpinner({ visible: true, message: "Loading failed tests..." });
     setBuild(Number(value));
     const res = await getTests(user, project, Number(value));
     setTests(res.data);
-    setSpinner(false);
+    setSpinner({ visible: false, message: "" });
   }
 
   async function handleRunAllChange() {
@@ -128,8 +131,7 @@ export default function Dashboard() {
 
   async function handleRerun(mode: string) {
     setResult([]);
-    setMessage({ color: "green", text: "Rerun initiated successfully. Please wait for result..." });
-    setSpinner(true);
+    setSpinner({ visible: true, message: `${mode === "debug" ? "Please wait for Playwright Inspector and Browser to open" : `Running ${runAll ? tests.length : 1} ${runAll ? "tests" : "test"}`}...` });
     const res = await rerun(runAll ? tests : (tests.filter((t) => t.id === test) as any[]), mode, env);
     if (res.status === 200) {
       setMessage({ color: "", text: "" });
@@ -137,7 +139,7 @@ export default function Dashboard() {
     } else {
       setMessage({ color: "red", text: res.error });
     }
-    setSpinner(false);
+    setSpinner({ visible: false, message: "" });
   }
 
   const ansiConverter = new AnsiToHtml({
@@ -215,7 +217,7 @@ export default function Dashboard() {
         {tests.length > 0 ? (
           <>
             <input id="runall" type="checkbox" disabled={builds.length === 0} checked={runAll} onChange={handleRunAllChange} />
-            <label htmlFor="runall">Run All Tests</label>
+            <label htmlFor="runall">Run All Failed Tests</label>
           </>
         ) : project && range && build && !spinner ? (
           <div style={{ marginTop: 10, color: "red" }}>Either there is no artifact found or there were no failures.</div>
@@ -270,8 +272,8 @@ export default function Dashboard() {
             <LogsViewer logs={r.logs} />
           </div>
         ))}
-      <div style={{ display: spinner ? "block" : "none", position: "absolute", top: 0, left: 0, width: "100vw", height: "100vh", backgroundColor: "lightgrey", opacity: "0.7" }}>
-        <h3 style={{ display: "flex", width: "100%", height: "100%", justifyContent: "center", alignItems: "center" }}>Loading...</h3>
+      <div style={{ display: spinner.visible ? "block" : "none", position: "absolute", top: 0, left: 0, width: "100vw", height: "100vh", backgroundColor: "lightgrey", opacity: "0.7" }}>
+        <h3 style={{ display: "flex", width: "100%", height: "100%", justifyContent: "center", alignItems: "center" }}>{spinner.message}</h3>
       </div>
     </>
   );
