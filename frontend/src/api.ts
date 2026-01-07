@@ -70,7 +70,7 @@ export const getBuilds = async (user: any, projectId: string, range: string) => 
 };
 
 export const getTests = async (user: any, projectId: string, buildId: number) => {
-  const res = await fetch(`${api}/tests`, {
+  const res = await fetch(`http://localhost:4000/getTests`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ user, projectId, buildId }),

@@ -8,7 +8,9 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+ExtractedReport
 package-lock.json
+.env
 dist
 dist-ssr
 *.local

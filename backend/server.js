@@ -4,8 +4,6 @@ const express = require("express");
 const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
-const AdmZip = require("adm-zip");
-const { XMLParser } = require("fast-xml-parser");
 const cors = require("cors");
 const { hashPassword, verifyPassword, encryptPAT, decryptPAT } = require("./utils/crypto");
 
@@ -80,59 +78,6 @@ function getDateRange(range) {
   }
 
   return { from, to };
-}
-
-function getFailedTests(artifactName) {
-  const EXTRACT_DIR = path.join(__dirname, "ExtractedReport", artifactName);
-
-  const junitFile = fs.readdirSync(EXTRACT_DIR).find((f) => f.endsWith(".xml"));
-  if (!junitFile) throw new Error("No JUnit XML found");
-
-  const xml = fs.readFileSync(path.join(EXTRACT_DIR, junitFile), "utf8");
-  const parser = new XMLParser({ ignoreAttributes: false });
-  const report = parser.parse(xml);
-
-  const failedTests = [];
-  let counter = 1;
-  function asArray(v) {
-    if (!v) return [];
-    return Array.isArray(v) ? v : [v];
-  }
-
-  asArray(report.testsuites?.testsuite).forEach((suite) => {
-    asArray(suite.testcase).forEach((tc) => {
-      if (!tc.failure) return;
-
-      const name = tc["@_name"];
-      const classname = tc["@_classname"];
-
-      // Split on ›
-      const parts = name.split("›").map((p) => p.trim());
-
-      const featureName = parts[0];
-      let scenarioName = "";
-      let example = null;
-
-      if (parts.length === 3 && parts[2].startsWith("Example")) {
-        // Scenario Outline
-        scenarioName = parts[1];
-        example = parts[2]; // Example #3
-      } else {
-        // Normal Scenario
-        scenarioName = parts.slice(1).join(" › ");
-      }
-
-      failedTests.push({
-        id: counter++,
-        classname,
-        featureName,
-        scenarioName,
-        example,
-      });
-    });
-  });
-
-  return failedTests;
 }
 
 /* ---------------- Teams ------------------ */
@@ -324,43 +269,6 @@ app.post("/builds", async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
-});
-
-/* ---------------- Download Report -------- */
-app.post("/tests", async (req, res) => {
-  const { user, projectId, buildId } = req.body;
-  const artifactName = "junit-xml";
-
-  const base = `https://dev.azure.com/${process.env.AZURE_ORG}/${projectId}`;
-  const artifactsUrl = `${base}/_apis/build/builds/${buildId}/artifacts?api-version=7.1-preview.5`;
-
-  const authHeader = {
-    Authorization: "Basic " + Buffer.from(`:${decryptPAT(user.pat)}`).toString("base64"),
-  };
-  const artifactsRes = await axios.get(artifactsUrl, {
-    headers: authHeader,
-  });
-
-  const artifact = artifactsRes.data.value.find((a) => a.name === artifactName);
-
-  if (!artifact) {
-    return res.json({ status: 404, data: [], error: `${artifactName} artifact not found` });
-  }
-
-  const zipRes = await axios.get(artifact.resource.downloadUrl, {
-    headers: authHeader,
-    responseType: "arraybuffer",
-  });
-
-  const extractionDir = path.join(process.cwd(), "ExtractedReport");
-  fs.mkdirSync(extractionDir, { recursive: true });
-  const zipPath = path.join(extractionDir, "junit.zip");
-  fs.writeFileSync(zipPath, zipRes.data);
-
-  new AdmZip(zipPath).extractAllTo(extractionDir, true);
-  const failedTests = getFailedTests(artifactName) || [];
-
-  res.json({ status: 200, data: failedTests });
 });
 
 const server = app.listen(3001, () => console.log("✅ Backend running on port 3001"));
