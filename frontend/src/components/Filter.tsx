@@ -76,7 +76,7 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
 
       <div style={{ width: "100%" }}>
         {build > 0 && tests.length > 0 ? (
-          <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center", gap: "10px" }}>
+          <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center", gap: "10px", border: "1px solid lightgrey", borderRadius: "5px", padding: "5px 10px" }}>
             <div>{`Total ${summary?.total || 0}, Passed ${summary?.passed || 0}, Failed ${summary?.failed || 0}`}</div>
             <input id="runall" type="checkbox" disabled={builds.length === 0} checked={runAll} onChange={handleRunAllChange} />
             <label htmlFor="runall">Run All Failed</label>

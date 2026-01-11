@@ -189,7 +189,7 @@ export default function Dashboard() {
           {result.map((r, idx) => (
             <div key={idx} style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
               <div style={{ width: "100%", display: "flex", justifyContent: "space-between" }}>
-                <div style={{ width: "60%", display: "flex", justifyContent: "flex-start", alignItems: "center", gap: "5px" }}>
+                <div style={{ width: "60%", display: "flex", justifyContent: "flex-start", alignItems: "center", gap: "10px" }}>
                   <div style={{ color: r.status === "Passed" ? "green" : "red" }}>{` (${r.status})`}</div>
                   <div>{`${r.title}`}</div>
                 </div>

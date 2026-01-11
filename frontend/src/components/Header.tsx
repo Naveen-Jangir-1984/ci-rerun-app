@@ -21,7 +21,7 @@ export default function Header() {
           </button>
 
           {open && (
-            <div style={{ position: "absolute", right: 0, background: "#fff", border: "1px solid #ccc", padding: 10, minWidth: 160, zIndex: 1 }}>
+            <div style={{ position: "absolute", right: 0, background: "#fff", border: "1px solid #ccc", borderRadius: "5px", padding: 10, minWidth: 160, zIndex: 1 }}>
               <div style={{ padding: 5, cursor: "pointer" }} onClick={() => navigate("/changeProfile")}>
                 Update Profile
               </div>

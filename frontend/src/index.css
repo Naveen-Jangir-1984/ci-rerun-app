@@ -18,6 +18,9 @@ select {
   padding: 5px 7px;
 }
 
+input[type="text"]:disabled,
+input[type="password"]:disabled,
+select:disabled,
 button:disabled {
   background-color: #eee;
   color: #999;
