@@ -35,16 +35,17 @@ export default function Password() {
   const isUpdateDisabled = !password.current || !password.password || !password.confirm;
 
   return (
-    <>
-      <input placeholder="Current" onChange={(e) => setPassword({ ...password, current: e.target.value })} />
-      <input placeholder="New" onChange={(e) => setPassword({ ...password, password: e.target.value })} />
-      <input placeholder="Confirm" onChange={(e) => setPassword({ ...password, confirm: e.target.value })} />
+    <div className="password" style={{ width: "auto", padding: "20px 40px" }}>
+      <h3>Update Password</h3>
+      <input type="password" placeholder="Current" onChange={(e) => setPassword({ ...password, current: e.target.value })} />
+      <input type="password" placeholder="New" onChange={(e) => setPassword({ ...password, password: e.target.value })} />
+      <input type="password" placeholder="Confirm" onChange={(e) => setPassword({ ...password, confirm: e.target.value })} />
 
       <button onClick={cancel}>Cancel</button>
       <button disabled={isUpdateDisabled} onClick={save}>
         Update
       </button>
-      <div style={{ marginTop: 20, color: message === "Password updated successfully" ? "green" : "red" }}>{message}</div>
-    </>
+      <div style={{ color: message === "Password updated successfully" ? "green" : "red" }}>{message}</div>
+    </div>
   );
 }

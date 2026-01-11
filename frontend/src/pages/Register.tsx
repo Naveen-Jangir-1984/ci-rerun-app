@@ -45,7 +45,7 @@ export default function Register() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", justifyContent: "flex-start", alignItems: "flex-start" }}>
+    <div className="register" style={{ width: "auto", padding: "20px 40px" }}>
       <h2>Sign Up</h2>
       <select value={form.team} onChange={(e) => setForm({ ...form, team: e.target.value })}>
         <option>Select Team</option>
@@ -53,15 +53,15 @@ export default function Register() {
           <option key={t}>{t}</option>
         ))}
       </select>
-      <input placeholder="Username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
-      <input placeholder="First Name" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
-      <input placeholder="Last Name" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
+      <input type="text" placeholder="Username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
+      <input type="text" placeholder="First Name" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
+      <input type="text" placeholder="Last Name" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
       <input type="password" placeholder="Password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
       <input type="password" placeholder="Confirm Password" value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} />
       <button disabled={!form.team || !form.username || !form.firstName || !form.lastName || !form.password || !form.confirm} onClick={submit}>
         Register
       </button>
-      <div style={{ marginTop: 20, color: message === "Registered successfully" ? "green" : "red" }}>{message}</div>
+      <div style={{ color: message === "Registered successfully" ? "green" : "red" }}>{message}</div>
     </div>
   );
 }

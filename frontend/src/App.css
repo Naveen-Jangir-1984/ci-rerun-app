@@ -1,1 +1,33 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  min-height: 100vh;
+  padding: 10px;
+  gap: 10px;
+  box-sizing: border-box;
+  background-color: #f5f5f5;
+}
 
+.login,
+.register,
+.dashboard,
+.settings,
+.password,
+.profile {
+  width: 60vw;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+}
+
+.medium-button {
+  width: 100px;
+  cursor: pointer;
+}

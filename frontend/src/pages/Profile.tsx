@@ -36,13 +36,14 @@ export default function Profile() {
   }
 
   return (
-    <>
-      <input value={firstName} placeholder="Firstname" onChange={(e) => setFirstName(e.target.value)} />
-      <input value={lastName} placeholder="Lastname" onChange={(e) => setLastName(e.target.value)} />
+    <div className="profile" style={{ width: "auto", padding: "20px 40px" }}>
+      <h3>Update Profile</h3>
+      <input type="text" value={firstName} placeholder="Firstname" onChange={(e) => setFirstName(e.target.value)} />
+      <input type="text" value={lastName} placeholder="Lastname" onChange={(e) => setLastName(e.target.value)} />
       <input type="password" placeholder={hasPAT ? "Enter a new PAT" : "Enter PAT"} value={pat} onChange={(e) => setPat(e.target.value)} />
       <button onClick={cancel}>Cancel</button>
       <button onClick={save}>Update</button>
-      <div style={{ marginTop: 20, color: "green" }}>{message}</div>
-    </>
+      <div style={{ color: "green" }}>{message}</div>
+    </div>
   );
 }

@@ -34,7 +34,7 @@ export default function SignIn() {
   const isSubmitDisabled = !f.team || !f.username || !f.password;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", justifyContent: "flex-start", alignItems: "flex-start" }}>
+    <div className="login" style={{ width: "auto", padding: "20px 40px" }}>
       <h2>Sign In</h2>
       <select onChange={(e) => setF({ ...f, team: e.target.value })}>
         <option>Select Team</option>
@@ -54,7 +54,7 @@ export default function SignIn() {
       <button disabled={isSubmitDisabled} style={{ cursor: isSubmitDisabled ? "not-allowed" : "pointer" }} onClick={submit}>
         Login
       </button>
-      <div style={{ marginTop: 20, color: "red" }}>{message}</div>
+      <div style={{ color: "red" }}>{message}</div>
     </div>
   );
 }

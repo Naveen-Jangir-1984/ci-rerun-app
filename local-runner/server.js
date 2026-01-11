@@ -45,18 +45,28 @@ function buildPlaywrightTitle(test) {
   return `${test.featureName} ${test.scenarioName}`;
 }
 
-function getFailedTests(artifactName) {
+function getTestResults(artifactName) {
   const EXTRACT_DIR = path.join(__dirname, "ExtractedReport", artifactName);
 
+  const result = {
+    summary: {
+      total: 0,
+      passed: 0,
+      failed: 0,
+    },
+    passedTests: [],
+    failedTests: [],
+  };
+
   const junitFile = fs.readdirSync(EXTRACT_DIR).find((f) => f.endsWith(".xml"));
-  if (!junitFile) throw new Error("No JUnit XML found");
+  if (!junitFile) return result;
 
   const xml = fs.readFileSync(path.join(EXTRACT_DIR, junitFile), "utf8");
   const parser = new XMLParser({ ignoreAttributes: false });
   const report = parser.parse(xml);
 
-  const failedTests = [];
   let counter = 1;
+
   function asArray(v) {
     if (!v) return [];
     return Array.isArray(v) ? v : [v];
@@ -64,7 +74,7 @@ function getFailedTests(artifactName) {
 
   asArray(report.testsuites?.testsuite).forEach((suite) => {
     asArray(suite.testcase).forEach((tc) => {
-      if (!tc.failure) return;
+      result.summary.total++;
 
       const name = tc["@_name"];
       const classname = tc["@_classname"];
@@ -77,25 +87,34 @@ function getFailedTests(artifactName) {
       let example = null;
 
       if (parts.length === 3 && parts[2].startsWith("Example")) {
-        // Scenario Outline
         scenarioName = parts[1];
-        example = parts[2]; // Example #3
+        example = parts[2];
       } else {
-        // Normal Scenario
         scenarioName = parts.slice(1).join(" › ");
       }
 
-      failedTests.push({
+      const testObj = {
         id: counter++,
         classname,
         featureName,
         scenarioName,
         example,
-      });
+      };
+
+      if (tc.failure) {
+        result.summary.failed++;
+        result.failedTests.push({
+          ...testObj,
+          errorMessage: tc.failure?.["#text"] || null,
+        });
+      } else {
+        result.summary.passed++;
+        result.passedTests.push(testObj);
+      }
     });
   });
 
-  return failedTests;
+  return result;
 }
 
 async function runPlaywright(title, mode, env) {
@@ -159,30 +178,51 @@ app.post("/getTests", async (req, res) => {
   const authHeader = {
     Authorization: "Basic " + Buffer.from(`:${decryptPAT(user.pat)}`).toString("base64"),
   };
-  const artifactsRes = await axios.get(artifactsUrl, {
-    headers: authHeader,
-  });
 
+  // 🔥 Always delete ExtractedReport folder
+  const rootExtractDir = path.join(process.cwd(), "ExtractedReport");
+  fs.rmSync(rootExtractDir, { recursive: true, force: true });
+
+  // 🔁 Re-create clean folder
+  fs.mkdirSync(rootExtractDir, { recursive: true });
+
+  const artifactsRes = await axios.get(artifactsUrl, { headers: authHeader });
   const artifact = artifactsRes.data.value.find((a) => a.name === artifactName);
 
   if (!artifact) {
-    return res.json({ status: 404, data: [], error: `${artifactName} artifact not found` });
+    return res.json({
+      status: 404,
+      data: [],
+      error: `${artifactName} artifact not found`,
+    });
   }
 
+  // Download artifact ZIP
   const zipRes = await axios.get(artifact.resource.downloadUrl, {
     headers: authHeader,
     responseType: "arraybuffer",
   });
 
-  const extractionDir = path.join(process.cwd(), "ExtractedReport");
+  const extractionDir = path.join(rootExtractDir, artifactName);
   fs.mkdirSync(extractionDir, { recursive: true });
-  const zipPath = path.join(extractionDir, "junit.zip");
-  fs.writeFileSync(zipPath, zipRes.data);
 
-  new AdmZip(zipPath).extractAllTo(extractionDir, true);
-  const failedTests = getFailedTests(artifactName) || [];
+  const zip = new AdmZip(zipRes.data);
 
-  res.json({ status: 200, data: failedTests });
+  // Extract only .xml files from junit-xml folder
+  zip.getEntries().forEach((entry) => {
+    if (!entry.isDirectory && entry.entryName.startsWith(`${artifactName}/`) && entry.entryName.endsWith(".xml")) {
+      const outputPath = path.join(extractionDir, path.basename(entry.entryName));
+
+      fs.writeFileSync(outputPath, entry.getData());
+    }
+  });
+
+  const testResults = getTestResults(artifactName) || [];
+
+  res.json({
+    status: 200,
+    data: testResults,
+  });
 });
 
 app.post("/rerun", async (req, res) => {

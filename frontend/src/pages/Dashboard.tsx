@@ -4,20 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import Header from "../components/Header";
 import AnsiToHtml from "ansi-to-html";
 import stripAnsi from "strip-ansi";
-
-const TIME_RANGES = [
-  { label: "Today", value: "today" },
-  { label: "Yesterday", value: "yesterday" },
-  { label: "Current Week", value: "current_week" },
-  { label: "Last Week", value: "last_week" },
-  { label: "Current Month", value: "current_month" },
-  { label: "Last Month", value: "last_month" },
-];
-
-const ENVIRONMENTS = [
-  { label: "QA", value: "qa" },
-  { label: "STAGING", value: "stg" },
-];
+import Filter from "../components/Filter";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -29,6 +16,7 @@ export default function Dashboard() {
   const [build, setBuild] = useState<number>(0);
   const [runAll, setRunAll] = useState<boolean>(true);
 
+  const [summary, setSummary] = useState<any>(null);
   const [tests, setTests] = useState<any[]>([]);
   const [test, setTest] = useState<number>(0);
   const [env, setEnv] = useState<string>("qa");
@@ -63,6 +51,7 @@ export default function Dashboard() {
     setRange("");
     setBuilds([]);
     setBuild(0);
+    setSummary(null);
     setRunAll(true);
     setTests([]);
     setTest(0);
@@ -78,6 +67,7 @@ export default function Dashboard() {
     setMessage({ color: "", text: "" });
     setBuilds([]);
     setBuild(0);
+    setSummary(null);
     setRunAll(true);
     setTests([]);
     setTest(0);
@@ -100,6 +90,7 @@ export default function Dashboard() {
   async function handleBuildChange(value: string) {
     setTests([]);
     setTest(0);
+    setSummary(null);
     setRunAll(true);
     setResult([]);
     setMessage({ color: "", text: "" });
@@ -107,15 +98,16 @@ export default function Dashboard() {
       setBuild(0);
       return;
     }
-    setSpinner({ visible: true, message: "Loading failed tests..." });
+    setSpinner({ visible: true, message: "Loading execution summary..." });
     setBuild(Number(value));
     const res = await getTests(user, project, Number(value));
-    if (res.data.length === 0) {
+    setSummary(res.data.summary);
+    if (res.data.summary.failed === 0) {
       setMessage({ color: "red", text: "No failed tests extracted for the selected build." });
       setRunAll(true);
     } else {
       setMessage({ color: "", text: "" });
-      setTests(res.data);
+      setTests(res.data.failedTests);
     }
     setSpinner({ visible: false, message: "" });
   }
@@ -137,11 +129,11 @@ export default function Dashboard() {
 
   async function handleRerun(mode: string) {
     setResult([]);
-    setSpinner({ visible: true, message: `${mode === "debug" ? "Please wait for Playwright Inspector and Browser to open" : `Running ${runAll ? tests.length : 1} ${runAll ? "tests" : "test"}`}...` });
+    setSpinner({ visible: true, message: `${mode === "debug" ? "Please wait for Playwright Inspector and Browser to open" : `Running ${runAll ? tests.length : ""} ${runAll ? "tests" : "test"}`}...` });
     const res = await rerun(runAll ? tests : (tests.filter((t) => t.id === test) as any[]), mode, env);
     if (res.status === 200) {
       setMessage({ color: "", text: "" });
-      setResult(res.data.map((r: any) => ({ ...r, logs: cleanPlaywrightLogs(r.logs) })));
+      setResult(res.data.map((r: any) => ({ ...r, logs: cleanPlaywrightLogs(r.logs), isOpen: false })));
     } else {
       setMessage({ color: "red", text: res.error });
     }
@@ -167,15 +159,18 @@ export default function Dashboard() {
 
     return (
       <div
+        className="thin-scrollbar"
         style={{
           background: "#000",
+          height: "55vh",
           color: "#fff",
           padding: "2rem",
           fontFamily: "monospace",
-          fontSize: "13px",
-          overflowX: "auto",
+          fontSize: "12px",
+          overflowY: "auto",
           borderRadius: "10px",
           marginTop: "10px",
+          boxSizing: "border-box",
         }}
         dangerouslySetInnerHTML={{ __html: html }}
       />
@@ -184,103 +179,35 @@ export default function Dashboard() {
 
   return (
     <>
-      <Header />
-
-      {/* Project selector */}
-      <div style={{ marginTop: 10 }}>
-        <select disabled={projects.length === 0} onChange={(e) => handleProjectChange(e.target.value)} value={project}>
-          <option value="">-- select project --</option>
-          {projects.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+      <div className="dashboard">
+        <Header />
+        <Filter projects={projects} builds={builds} tests={tests} summary={summary} hasPAT={hasPAT} spinner={spinner} message={message} project={project} range={range} build={build} test={test} env={env} runAll={runAll} handleProjectChange={handleProjectChange} handleRangeChange={handleRangeChange} handleBuildChange={handleBuildChange} handleTestChange={handleTestChange} handleRunAllChange={handleRunAllChange} setEnv={setEnv} handleRerun={handleRerun} />
       </div>
 
-      {/* Range filter */}
-      <div style={{ marginTop: 10 }}>
-        <select value={range} disabled={!project} onChange={(e) => handleRangeChange(e.target.value)}>
-          <option value="">-- select range --</option>
-          {TIME_RANGES.map((r) => (
-            <option key={r.value} value={r.value}>
-              {r.label}
-            </option>
+      {result.length > 0 && (
+        <div className="dashboard">
+          {result.map((r, idx) => (
+            <div key={idx} style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              <div style={{ width: "100%", display: "flex", justifyContent: "space-between" }}>
+                <div style={{ width: "60%", display: "flex", justifyContent: "flex-start", alignItems: "center", gap: "5px" }}>
+                  <div style={{ color: r.status === "Passed" ? "green" : "red" }}>{` (${r.status})`}</div>
+                  <div>{`${r.title}`}</div>
+                </div>
+                <button
+                  className="medium-button"
+                  onClick={() => {
+                    r.isOpen = !r.isOpen;
+                    setResult([...result]);
+                  }}
+                >
+                  {r.isOpen ? "Hide Logs" : "Show Logs"}
+                </button>
+              </div>
+              {r.isOpen && <LogsViewer logs={r.logs} />}
+            </div>
           ))}
-        </select>
-      </div>
-
-      {/* Build selector */}
-      <div style={{ marginTop: 10 }}>
-        <select value={build} disabled={builds.length === 0} onChange={(e) => handleBuildChange(e.target.value)}>
-          <option value={0}>-- select build --</option>
-          {builds.map((b) => (
-            <option key={b.buildId} style={{ display: b.status === "completed" && b.result === "succeeded" ? "none" : "block" }} value={b.buildId}>
-              {b.pipelineName} (#{b.buildId})
-            </option>
-          ))}
-        </select>
-        {tests.length > 0 ? (
-          <>
-            <input id="runall" type="checkbox" disabled={builds.length === 0} checked={runAll} onChange={handleRunAllChange} />
-            <label htmlFor="runall">Run All Failed Tests</label>
-          </>
-        ) : project && range && build && !spinner ? (
-          <div style={{ marginTop: 10, color: "red" }}>Either there is no artifact found or there were no failures.</div>
-        ) : (
-          ""
-        )}
-      </div>
-
-      {/* Failed Tests */}
-      {!runAll && (
-        <div style={{ marginTop: 10 }}>
-          <select value={test} disabled={tests.length === 0} onChange={(e) => handleTestChange(Number(e.target.value))}>
-            <option value={0}>-- select test --</option>
-            {tests.map((test) => (
-              <option key={test.id} value={test.id}>
-                {test.featureName} → {test.scenarioName} {test.example ? `(${test.example})` : ""}
-              </option>
-            ))}
-          </select>
         </div>
       )}
-
-      {/* Environment selector */}
-      <div style={{ marginTop: 10 }}>
-        <select value={env} disabled={(!runAll && test === 0) || tests.length === 0 || builds.length === 0} onChange={(e) => setEnv(e.target.value)}>
-          {ENVIRONMENTS.map((env) => (
-            <option key={env.value} value={env.value}>
-              {env.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Rerun button */}
-      <div style={{ marginTop: 10 }}>
-        <button disabled={(!runAll && test === 0) || tests.length === 0 || builds.length === 0} onClick={() => handleRerun("rerun")}>
-          Run
-        </button>
-        <button disabled={(!runAll && test === 0) || tests.length === 0 || builds.length === 0} onClick={() => handleRerun("debug")}>
-          Debug
-        </button>
-      </div>
-
-      <div style={{ marginTop: 20, color: message.color }}>{message.text}</div>
-
-      {!hasPAT && <p style={{ color: "red" }}>Add PAT in Settings to enable projects</p>}
-      {result.length > 0 &&
-        result.map((r, idx) => (
-          <div key={idx} style={{ marginTop: 10 }}>
-            <span>{`${r.title}`}</span>
-            <span style={{ color: r.status === "Passed" ? "green" : "red" }}>{` (${r.status})`}</span>
-            <LogsViewer logs={r.logs} />
-          </div>
-        ))}
-      <div style={{ display: spinner.visible ? "block" : "none", position: "absolute", top: 0, left: 0, width: "100vw", height: "100vh", backgroundColor: "lightgrey", opacity: "0.7" }}>
-        <h3 style={{ display: "flex", width: "100%", height: "100%", justifyContent: "center", alignItems: "center" }}>{spinner.message}</h3>
-      </div>
     </>
   );
 }
