@@ -217,7 +217,7 @@ app.post("/getTests", async (req, res) => {
     }
   });
 
-  const testResults = getTestResults(artifactName) || [];
+  const testResults = getTestResults(artifactName);
 
   res.json({
     status: 200,

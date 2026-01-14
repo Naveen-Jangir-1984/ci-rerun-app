@@ -14,7 +14,7 @@ export default function Dashboard() {
   const [builds, setBuilds] = useState<any[]>([]);
   const [range, setRange] = useState("");
   const [build, setBuild] = useState<number>(0);
-  const [runAll, setRunAll] = useState<boolean>(true);
+  const [runAll, setRunAll] = useState<boolean>(false);
 
   const [summary, setSummary] = useState<any>(null);
   const [tests, setTests] = useState<any[]>([]);
@@ -52,7 +52,7 @@ export default function Dashboard() {
     setBuilds([]);
     setBuild(0);
     setSummary(null);
-    setRunAll(true);
+    setRunAll(false);
     setTests([]);
     setTest(0);
     setResult([]);
@@ -68,7 +68,7 @@ export default function Dashboard() {
     setBuilds([]);
     setBuild(0);
     setSummary(null);
-    setRunAll(true);
+    setRunAll(false);
     setTests([]);
     setTest(0);
     setResult([]);
@@ -91,20 +91,23 @@ export default function Dashboard() {
     setTests([]);
     setTest(0);
     setSummary(null);
-    setRunAll(true);
+    setRunAll(false);
     setResult([]);
     setMessage({ color: "", text: "" });
     if (!Number(value)) {
       setBuild(0);
       return;
     }
-    setSpinner({ visible: true, message: "Loading execution summary..." });
+    setSpinner({ visible: true, message: "Loading pipeline results..." });
     setBuild(Number(value));
     const res = await getTests(user, project, Number(value));
     setSummary(res.data.summary);
-    if (res.data.summary.failed === 0) {
+    if (res.status !== 200) {
+      setTests([]);
+      setMessage({ color: "red", text: res.error });
+    } else if (res.data.summary.failed === 0) {
       setMessage({ color: "red", text: "No failed tests extracted for the selected build." });
-      setRunAll(true);
+      setRunAll(false);
     } else {
       setMessage({ color: "", text: "" });
       setTests(res.data.failedTests);
@@ -189,7 +192,7 @@ export default function Dashboard() {
           {result.map((r, idx) => (
             <div key={idx} style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
               <div style={{ width: "100%", display: "flex", justifyContent: "space-between" }}>
-                <div style={{ width: "60%", display: "flex", justifyContent: "flex-start", alignItems: "center", gap: "10px" }}>
+                <div style={{ width: "80%", display: "flex", justifyContent: "flex-start", alignItems: "center", gap: "10px" }}>
                   <div style={{ color: r.status === "Passed" ? "green" : "red" }}>{` (${r.status})`}</div>
                   <div>{`${r.title}`}</div>
                 </div>
