@@ -218,35 +218,43 @@ app.post("/builds", async (req, res) => {
     const { user } = req.body;
     const { project, range } = req.query;
 
-    // ❌ No filter → no builds
     const dateRange = getDateRange(range);
     if (!dateRange) {
-      return res.json([]); // ✅ important change
+      return res.json([]);
+    }
+
+    if (!project) {
+      return res.status(400).json({ error: "project required" });
     }
 
     const authHeader = {
       Authorization: "Basic " + Buffer.from(`:${decryptPAT(user.pat)}`).toString("base64"),
     };
-    if (!project) {
-      return res.status(400).json({ error: "project required" });
-    }
 
     const base = `https://dev.azure.com/${process.env.AZURE_ORG}/${project}`;
 
     // 1. Get builds
     const buildsRes = await axios.get(`${base}/_apis/build/builds?api-version=7.1-preview.7`, { headers: authHeader });
 
+    // ✅ Filter by date range AND success-with-failure result
     const builds = buildsRes.data.value.filter((b) => {
-      if (!b.finishTime) return false;
+      if (!b.finishTime || !b.result) return false;
+
       const finish = new Date(b.finishTime);
-      return finish >= dateRange.from && finish <= dateRange.to;
+      const isInRange = finish >= dateRange.from && finish <= dateRange.to;
+
+      const result = b.result.toLowerCase();
+
+      const isSuccessWithFailure = result === "partiallysucceeded";
+
+      return isInRange && isSuccessWithFailure;
     });
 
-    // 2. Enrich with failed test count
+    // 2. Enrich builds
     const enriched = await Promise.all(
       builds.map(async (b) => {
         try {
-          const runsRes = await axios.get(`${base}/_apis/test/runs?buildIds=${b.id}&api-version=7.1-preview.7`, { headers: authHeader });
+          await axios.get(`${base}/_apis/test/runs?buildIds=${b.id}&api-version=7.1-preview.7`, { headers: authHeader });
 
           return {
             buildId: b.id,
