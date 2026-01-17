@@ -1,3 +1,5 @@
+import Header from "./Header";
+
 interface FilterProps {
   projects: any[];
   builds: any[];
@@ -37,11 +39,23 @@ const ENVIRONMENTS = [
 
 export default function Filter({ projects, builds, tests, summary, hasPAT, spinner, message, project, range, build, test, env, runAll, handleProjectChange, handleRangeChange, handleBuildChange, handleTestChange, handleRunAllChange, setEnv, handleRerun }: FilterProps) {
   return (
-    <>
+    <div className="filter">
+      {/* Header */}
+      <Header />
+
+      {/* Organization */}
+      <div>
+        <span className="filter-field">Organization</span>
+        <div style={{ width: "70%", display: "flex", justifyContent: "flex-start", alignItems: "center", gap: "10px", fontSize: "14px", cursor: "not-allowed" }}>
+          <span style={{ width: "100%", backgroundColor: "#fff", padding: ".50rem 1rem", border: "1px solid #ccc", borderRadius: "5px" }}>{`${import.meta.env.VITE_SERVER_ORG}`}</span>
+        </div>
+      </div>
+
       {/* Project selector */}
-      <div style={{ width: "100%" }}>
-        <select style={{ width: "100%" }} disabled={projects.length === 0} onChange={(e) => handleProjectChange(e.target.value)} value={project}>
-          <option value="">-- select project --</option>
+      <div>
+        <span className="filter-field">Project</span>
+        <select style={{ width: "70%" }} disabled={projects.length === 0} onChange={(e) => handleProjectChange(e.target.value)} value={project}>
+          <option value="">-- select --</option>
           {projects.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
@@ -51,9 +65,10 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
       </div>
 
       {/* Range filter */}
-      <div style={{ width: "100%" }}>
-        <select style={{ width: "100%" }} value={range} disabled={!project} onChange={(e) => handleRangeChange(e.target.value)}>
-          <option value="">-- select range --</option>
+      <div>
+        <span className="filter-field">Range</span>
+        <select style={{ width: "70%" }} value={range} disabled={!project} onChange={(e) => handleRangeChange(e.target.value)}>
+          <option value="">-- select --</option>
           {TIME_RANGES.map((r) => (
             <option key={r.value} value={r.value}>
               {r.label}
@@ -63,9 +78,10 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
       </div>
 
       {/* Build selector */}
-      <div style={{ width: "100%" }}>
-        <select style={{ width: "100%" }} value={build} disabled={builds.length === 0} onChange={(e) => handleBuildChange(e.target.value)}>
-          <option value={0}>-- select build --</option>
+      <div>
+        <span className="filter-field">Pipeline</span>
+        <select style={{ width: "70%" }} value={build} disabled={builds.length === 0} onChange={(e) => handleBuildChange(e.target.value)}>
+          <option value={0}>-- select --</option>
           {builds.map((b) => (
             <option key={b.buildId} style={{ display: b.status === "completed" && b.result === "succeeded" ? "none" : "block" }} value={b.buildId}>
               (#{b.buildId}) {b.pipelineName}
@@ -74,25 +90,32 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
         </select>
       </div>
 
-      <div style={{ width: "100%" }}>
-        {build > 0 && tests.length > 0 ? (
-          <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center", gap: "10px", border: "1px solid lightgrey", borderRadius: "5px", padding: "5px 10px" }}>
-            <div>{`Total ${summary?.total || 0}, Passed ${summary?.passed || 0}, Failed ${summary?.failed || 0}`}</div>
-            <input id="runall" type="checkbox" disabled={builds.length === 0} checked={runAll} onChange={handleRunAllChange} />
-            <label htmlFor="runall">Run All Failed</label>
+      {/* Summary and Run All Failed */}
+      {build > 0 && tests.length > 0 ? (
+        <div>
+          <span className="filter-field">Result</span>
+          <div className="filter-result">
+            <span style={{ backgroundColor: "#def" }}>{`Total ${summary?.total || 0}`}</span>
+            <span style={{ backgroundColor: "#dfd" }}>{`Passed ${summary?.passed || 0}`}</span>
+            <span style={{ backgroundColor: "#fdd" }}>{`Failed ${summary?.failed || 0}`}</span>
+            <label htmlFor="runall">
+              <input id="runall" type="checkbox" disabled={builds.length === 0} checked={runAll} onChange={handleRunAllChange} />
+              <span>Run All Failed</span>
+            </label>
           </div>
-        ) : project && range && build && !spinner ? (
-          <div style={{ color: "red" }}>Either there is no artifact found or there were no failures.</div>
-        ) : (
-          ""
-        )}
-      </div>
+        </div>
+      ) : project && range && build && !spinner ? (
+        <div style={{ color: "red" }}>Either there is no artifact found or there were no failures.</div>
+      ) : (
+        ""
+      )}
 
       {/* Failed Tests */}
       {!runAll && (
-        <div style={{ width: "100%" }}>
-          <select style={{ width: "100%" }} value={test} disabled={tests.length === 0} onChange={(e) => handleTestChange(Number(e.target.value))}>
-            <option value={0}>-- select failed test --</option>
+        <div>
+          <span className="filter-field">Failed Test</span>
+          <select style={{ width: "70%" }} value={test} disabled={tests.length === 0} onChange={(e) => handleTestChange(Number(e.target.value))}>
+            <option value={0}>-- select --</option>
             {tests.map((test) => (
               <option key={test.id} value={test.id}>
                 {test.featureName} → {test.scenarioName} {test.example ? `(${test.example})` : ""}
@@ -104,8 +127,9 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
 
       {/* Environment selector */}
       {build > 0 && (
-        <div style={{ width: "100%" }}>
-          <select style={{ width: "100%" }} value={env} disabled={(!runAll && test === 0) || tests.length === 0 || builds.length === 0} onChange={(e) => setEnv(e.target.value)}>
+        <div>
+          <span className="filter-field">Environment</span>
+          <select style={{ width: "70%" }} value={env} disabled={(!runAll && test === 0) || tests.length === 0 || builds.length === 0} onChange={(e) => setEnv(e.target.value)}>
             {ENVIRONMENTS.map((env) => (
               <option key={env.value} value={env.value}>
                 {env.label}
@@ -116,7 +140,7 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
       )}
 
       {/* Rerun button */}
-      <div style={{ width: "100%", display: "flex", justifyContent: "flex-start", gap: "10px" }}>
+      <div style={{ width: "100%", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
         <button className="medium-button" disabled={(!runAll && test === 0) || tests.length === 0 || builds.length === 0} onClick={() => handleRerun("rerun")}>
           Run
         </button>
@@ -128,9 +152,6 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
       <div style={{ color: message.color }}>{message.text}</div>
 
       {!hasPAT && <p style={{ color: "red" }}>Add PAT in Settings to enable projects</p>}
-      <div style={{ display: spinner.visible ? "block" : "none", position: "absolute", top: 0, left: 0, width: "100vw", height: "100vh", backgroundColor: "lightgrey", opacity: "0.7" }}>
-        <h3 style={{ display: "flex", width: "100%", height: "100%", justifyContent: "center", alignItems: "center" }}>{spinner.message}</h3>
-      </div>
-    </>
+    </div>
   );
 }

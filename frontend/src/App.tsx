@@ -43,7 +43,7 @@ function AppRoutes() {
           <PublicLayout>
             <>
               <Login />
-              <p>
+              <p style={{ width: "380px", textAlign: "right" }}>
                 New user? <Link to="/register">Sign Up</Link>
               </p>
             </>
@@ -58,7 +58,7 @@ function AppRoutes() {
           <PublicLayout>
             <>
               <Register />
-              <p>
+              <p style={{ width: "380px", textAlign: "right" }}>
                 Already registered? <Link to="/login">Sign In</Link>
               </p>
             </>

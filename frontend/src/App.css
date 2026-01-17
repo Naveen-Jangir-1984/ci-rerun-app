@@ -1,7 +1,7 @@
 .app {
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: center;
   min-height: 100vh;
   padding: 10px;
@@ -12,22 +12,204 @@
 
 .login,
 .register,
-.dashboard,
 .settings,
 .password,
 .profile {
-  width: 60vw;
   border: 1px solid #ddd;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 2rem 3rem;
+  /* box-shadow: 0 2px 20px lightgrey; */
+}
+
+.dashboard {
+  width: 98vw;
+  height: 95vh;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  border: none;
+}
+
+.header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header .user-name {
+  width: 20%;
+  background-color: #ddd;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+}
+
+.header .update-user-info {
+  width: auto;
+  display: flex;
+  justify-content: flex-end;
   align-items: center;
   gap: 10px;
-  padding: 10px 20px;
+}
+
+.header .user-settings {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  right: 0;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 10px;
+  min-width: 160px;
+  z-index: 1;
+}
+
+.filter {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-sizing: border-box;
+  gap: 15px;
+  width: 35%;
+}
+
+.filter div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+}
+
+.filter .filter-field {
+  width: 20%;
+  background-color: #ddd;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+}
+
+.filter .filter-result {
+  width: 70%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.8rem;
+}
+
+.filter .filter-result > span {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.filter .filter-result > label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  background-color: #fff;
+  padding: 0.6rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  width: 65%;
+  max-height: 100%;
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid #ccc;
+  border-radius: 7px;
+  padding: 20px;
+  margin-bottom: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.empty {
+  color: #555;
+  border: 1px dashed #ccc;
+  border-radius: 7px;
+  height: 100%;
+  padding: 1rem;
+  justify-content: flex-start;
+  box-sizing: border-box;
 }
 
 .medium-button {
   width: 100px;
-  cursor: pointer;
+  height: 30px;
+}
+
+.medium-button:hover {
+  background-color: #ddd;
+}
+
+.logout:hover {
+  background: linear-gradient(to bottom, #fee, #fcc, #fee);
+}
+
+.user-actions {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+
+.spinner-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: lightgrey;
+  opacity: 0.7;
+}
+
+.spinner-block {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  gap: 1rem;
+  z-index: 1000;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 1px solid #fff;
+  border-top: 1px solid #000;
+  border-radius: 50%;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }

@@ -141,7 +141,7 @@ app.post("/login", async (req, res) => {
   const user = db.users.find((u) => u.team === team && u.username === username);
 
   if (!user || !(await verifyPassword(password, user.password))) {
-    return res.json({ status: 401, error: "Invalid credentials" });
+    return res.json({ status: 401, error: "Invalid Credentials" });
   }
 
   // Never send password back

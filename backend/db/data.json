@@ -1,9 +1,22 @@
 {
-  "teams": ["Team 1", "Team 2", "Team 3"],
+  "teams": [
+    {
+      "id": "TM1",
+      "name": "Team 1"
+    },
+    {
+      "id": "TM2",
+      "name": "Team 2"
+    },
+    {
+      "id": "TM3",
+      "name": "Team 3"
+    }
+  ],
   "users": [
     {
       "id": "af915855-3f03-4932-a55a-2a8da9fa061d",
-      "team": "Team 1",
+      "team": "TM1",
       "username": "njangir",
       "firstName": "Naveen",
       "lastName": "Jangir",

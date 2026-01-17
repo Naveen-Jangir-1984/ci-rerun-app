@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { getProjects, getBuilds, getTests, rerun } from "../api";
 import { useAuth } from "../context/AuthContext";
-import Header from "../components/Header";
 import AnsiToHtml from "ansi-to-html";
 import stripAnsi from "strip-ansi";
 import Filter from "../components/Filter";
+import Results from "../components/Results";
+import Spinner from "../components/Spinner";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -162,7 +163,6 @@ export default function Dashboard() {
 
     return (
       <div
-        className="thin-scrollbar"
         style={{
           background: "#000",
           height: "55vh",
@@ -181,36 +181,11 @@ export default function Dashboard() {
   }
 
   return (
-    <>
-      <div className="dashboard">
-        <Header />
-        <Filter projects={projects} builds={builds} tests={tests} summary={summary} hasPAT={hasPAT} spinner={spinner} message={message} project={project} range={range} build={build} test={test} env={env} runAll={runAll} handleProjectChange={handleProjectChange} handleRangeChange={handleRangeChange} handleBuildChange={handleBuildChange} handleTestChange={handleTestChange} handleRunAllChange={handleRunAllChange} setEnv={setEnv} handleRerun={handleRerun} />
-      </div>
+    <div className="dashboard">
+      <Filter projects={projects} builds={builds} tests={tests} summary={summary} hasPAT={hasPAT} spinner={spinner} message={message} project={project} range={range} build={build} test={test} env={env} runAll={runAll} handleProjectChange={handleProjectChange} handleRangeChange={handleRangeChange} handleBuildChange={handleBuildChange} handleTestChange={handleTestChange} handleRunAllChange={handleRunAllChange} setEnv={setEnv} handleRerun={handleRerun} />
 
-      {result.length > 0 && (
-        <div className="dashboard">
-          {result.map((r, idx) => (
-            <div key={idx} style={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-              <div style={{ width: "100%", display: "flex", justifyContent: "space-between" }}>
-                <div style={{ width: "80%", display: "flex", justifyContent: "flex-start", alignItems: "center", gap: "10px" }}>
-                  <div style={{ color: r.status === "Passed" ? "green" : "red" }}>{` (${r.status})`}</div>
-                  <div>{`${r.title}`}</div>
-                </div>
-                <button
-                  className="medium-button"
-                  onClick={() => {
-                    r.isOpen = !r.isOpen;
-                    setResult([...result]);
-                  }}
-                >
-                  {r.isOpen ? "Hide Logs" : "Show Logs"}
-                </button>
-              </div>
-              {r.isOpen && <LogsViewer logs={r.logs} />}
-            </div>
-          ))}
-        </div>
-      )}
-    </>
+      <Results result={result} setResult={setResult} LogsViewer={LogsViewer} />
+      <Spinner visible={spinner.visible} message={spinner.message} />
+    </div>
   );
 }

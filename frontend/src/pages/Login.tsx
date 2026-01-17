@@ -5,7 +5,7 @@ import { getTeams, getUsersByTeam } from "../api";
 
 export default function SignIn() {
   const { login } = useAuth();
-  const [teams, setTeams] = useState<string[]>([]);
+  const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
   const nav = useNavigate();
   const [f, setF] = useState<any>({});
   const [users, setUsers] = useState<any[]>([]);
@@ -31,15 +31,24 @@ export default function SignIn() {
     else nav("/dashboard");
   }
 
+  function reset() {
+    setF({ team: "", username: "", password: "" });
+    setUsers([]);
+    setMessage("");
+  }
+
   const isSubmitDisabled = !f.team || !f.username || !f.password;
+  const isResetDisabled = !f.team && !f.username && !f.password;
 
   return (
-    <div className="login" style={{ width: "auto", padding: "20px 40px" }}>
+    <div className="login">
       <h2>Sign In</h2>
-      <select onChange={(e) => setF({ ...f, team: e.target.value })}>
-        <option>Select Team</option>
+      <select onChange={(e) => setF({ ...f, team: e.target.value })} value={f.team}>
+        <option value="">-- Select Team --</option>
         {teams.map((t) => (
-          <option key={t}>{t}</option>
+          <option key={t.id} value={t.id}>
+            {t.name}
+          </option>
         ))}
       </select>
       <select value={f.username} onChange={(e) => setF({ ...f, username: e.target.value })} disabled={!f.team}>
@@ -50,11 +59,16 @@ export default function SignIn() {
           </option>
         ))}
       </select>
-      <input type="password" disabled={!f.username} placeholder="Password" onChange={(e) => setF({ ...f, password: e.target.value })} />
-      <button disabled={isSubmitDisabled} style={{ cursor: isSubmitDisabled ? "not-allowed" : "pointer" }} onClick={submit}>
-        Login
-      </button>
-      <div style={{ color: "red" }}>{message}</div>
+      <input type="password" disabled={!f.username} placeholder="Enter password" onChange={(e) => setF({ ...f, password: e.target.value })} value={f.password} />
+      <div className="user-actions">
+        <button className="medium-button" disabled={isResetDisabled} onClick={reset}>
+          Reset
+        </button>
+        <button className="medium-button" disabled={isSubmitDisabled} onClick={submit}>
+          Submit
+        </button>
+      </div>
+      <div style={{ fontSize: "0.9rem", color: "red" }}>{message}</div>
     </div>
   );
 }

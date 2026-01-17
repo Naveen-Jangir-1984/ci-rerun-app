@@ -8,20 +8,18 @@ export default function Header() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <span>
-        Welcome, <b>{`${user.firstName} ${user.lastName}`}</b>
-      </span>
+    <header className="header">
+      <div className="user-name">{`${user.firstName} ${user.lastName}`}</div>
 
-      {/* Settings */}
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+      <div className="update-user-info">
+        {/* Settings */}
         <span style={{ position: "relative" }}>
           <button className="medium-button" onClick={() => setOpen(!open)}>
             Settings
           </button>
 
           {open && (
-            <div style={{ position: "absolute", right: 0, background: "#fff", border: "1px solid #ccc", borderRadius: "5px", padding: 10, minWidth: 160, zIndex: 1 }}>
+            <div className="user-settings">
               <div style={{ padding: 5, cursor: "pointer" }} onClick={() => navigate("/changeProfile")}>
                 Update Profile
               </div>
@@ -32,8 +30,8 @@ export default function Header() {
           )}
         </span>
         {/* Logout */}
-        <button className="medium-button" onClick={logout}>
-          Logout
+        <button className="medium-button logout" onClick={logout}>
+          Sign Out
         </button>
       </div>
     </header>
