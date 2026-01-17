@@ -183,7 +183,6 @@ export default function Dashboard() {
   return (
     <div className="dashboard">
       <Filter projects={projects} builds={builds} tests={tests} summary={summary} hasPAT={hasPAT} spinner={spinner} message={message} project={project} range={range} build={build} test={test} env={env} runAll={runAll} handleProjectChange={handleProjectChange} handleRangeChange={handleRangeChange} handleBuildChange={handleBuildChange} handleTestChange={handleTestChange} handleRunAllChange={handleRunAllChange} setEnv={setEnv} handleRerun={handleRerun} />
-
       <Results result={result} setResult={setResult} LogsViewer={LogsViewer} />
       <Spinner visible={spinner.visible} message={spinner.message} />
     </div>

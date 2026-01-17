@@ -82,7 +82,7 @@
   border-radius: 8px;
   box-sizing: border-box;
   gap: 15px;
-  width: 35%;
+  width: 40%;
 }
 
 .filter div {
@@ -110,6 +110,7 @@
 }
 
 .filter .filter-result > span {
+  word-spacing: 0.25rem;
   padding: 0.5rem 1rem;
   border: 1px solid #ccc;
   border-radius: 5px;
@@ -131,7 +132,7 @@
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  width: 65%;
+  width: 60%;
   max-height: 100%;
 }
 

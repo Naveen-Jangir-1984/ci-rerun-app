@@ -13,7 +13,7 @@ export default function Results({ result, setResult, LogsViewer }: ResultsProps)
             <div key={idx} className="result">
               <div style={{ width: "100%", display: "flex", justifyContent: "space-between" }}>
                 <div style={{ width: "80%", display: "flex", justifyContent: "flex-start", alignItems: "center", gap: "10px" }}>
-                  <div style={{ color: r.status === "Passed" ? "green" : "red" }}>{` (${r.status})`}</div>
+                  <div style={{ backgroundColor: r.status === "Passed" ? "#ada" : "#f99", borderRadius: "5px", padding: "0.25rem 0.5rem", fontSize: "0.8rem" }}>{r.status}</div>
                   <div>{`${r.title}`}</div>
                 </div>
                 <button

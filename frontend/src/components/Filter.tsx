@@ -47,7 +47,7 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
       <div>
         <span className="filter-field">Organization</span>
         <div style={{ width: "70%", display: "flex", justifyContent: "flex-start", alignItems: "center", gap: "10px", fontSize: "14px", cursor: "not-allowed" }}>
-          <span style={{ width: "100%", backgroundColor: "#fff", padding: ".50rem 1rem", border: "1px solid #ccc", borderRadius: "5px" }}>{`${import.meta.env.VITE_SERVER_ORG}`}</span>
+          <span style={{ width: "100%", backgroundColor: "#fff", padding: ".50rem .75rem", border: "1px solid #ccc", borderRadius: "5px" }}>{`${import.meta.env.VITE_SERVER_ORG}`}</span>
         </div>
       </div>
 
@@ -79,7 +79,9 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
 
       {/* Build selector */}
       <div>
-        <span className="filter-field">Pipeline</span>
+        <span className="filter-field">
+          <span style={{ fontSize: "0.75rem" }}>(#Build)</span> Pipeline
+        </span>
         <select style={{ width: "70%" }} value={build} disabled={builds.length === 0} onChange={(e) => handleBuildChange(e.target.value)}>
           <option value={0}>-- select --</option>
           {builds.map((b) => (
