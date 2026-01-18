@@ -8,6 +8,7 @@
   gap: 10px;
   box-sizing: border-box;
   background-color: #f5f5f5;
+  overflow-y: auto;
 }
 
 .login,
@@ -46,9 +47,9 @@
 
 .header .user-name {
   width: 20%;
-  background-color: #ddd;
+  background-color: #eee;
   padding: 0.5rem 1rem;
-  border-radius: 5px;
+  border-radius: 7px;
 }
 
 .header .update-user-info {
@@ -94,10 +95,11 @@
 }
 
 .filter .filter-field {
+  font-size: small;
   width: 20%;
-  background-color: #ddd;
+  background-color: #eee;
   padding: 0.5rem 1rem;
-  border-radius: 5px;
+  border-radius: 7px;
 }
 
 .filter .filter-result {
@@ -142,7 +144,7 @@
   justify-content: space-between;
   border: 1px solid #ccc;
   border-radius: 7px;
-  padding: 20px;
+  padding: 10px;
   margin-bottom: 10px;
   width: 100%;
   box-sizing: border-box;
@@ -158,16 +160,31 @@
   box-sizing: border-box;
 }
 
-.medium-button {
-  width: 100px;
-  height: 30px;
+.large-button {
+  width: 300px;
+  height: 35px;
+  padding: 0.75rem 1.5rem;
 }
 
+.medium-button {
+  font-size: 12px;
+  width: 100px;
+  height: 30px;
+  padding: 0.5rem 1rem;
+}
+
+.small-button {
+  font-size: 11px;
+  width: 100px;
+  padding: 0.25rem 0.75rem;
+}
+
+.small-button:hover,
 .medium-button:hover {
   background-color: #ddd;
 }
 
-.logout:hover {
+.danger:hover {
   background: linear-gradient(to bottom, #fee, #fcc, #fee);
 }
 
@@ -183,8 +200,7 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: lightgrey;
-  opacity: 0.7;
+  background-color: transparent;
 }
 
 .spinner-block {

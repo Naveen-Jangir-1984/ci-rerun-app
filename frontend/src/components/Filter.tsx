@@ -20,7 +20,7 @@ interface FilterProps {
   handleTestChange: (value: number) => void;
   handleRunAllChange: () => void;
   setEnv: (value: string) => void;
-  handleRerun: (mode: string) => void;
+  handleRerun: (id: number, env: string, mode: string) => void;
 }
 
 const TIME_RANGES = [
@@ -39,7 +39,7 @@ const ENVIRONMENTS = [
 
 export default function Filter({ projects, builds, tests, summary, hasPAT, spinner, message, project, range, build, test, env, runAll, handleProjectChange, handleRangeChange, handleBuildChange, handleTestChange, handleRunAllChange, setEnv, handleRerun }: FilterProps) {
   return (
-    <div className="filter">
+    <div className="filter" style={{ filter: spinner.visible ? "blur(5px)" : "none" }}>
       {/* Header */}
       <Header />
 
@@ -79,9 +79,7 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
 
       {/* Build selector */}
       <div>
-        <span className="filter-field">
-          <span style={{ fontSize: "0.75rem" }}>(#Build)</span> Pipeline
-        </span>
+        <span className="filter-field">(#Build) Pipeline</span>
         <select style={{ width: "70%" }} value={build} disabled={builds.length === 0} onChange={(e) => handleBuildChange(e.target.value)}>
           <option value={0}>-- select --</option>
           {builds.map((b) => (
@@ -143,10 +141,10 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
 
       {/* Rerun button */}
       <div style={{ width: "100%", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-        <button className="medium-button" disabled={(!runAll && test === 0) || tests.length === 0 || builds.length === 0} onClick={() => handleRerun("rerun")}>
+        <button className="medium-button" disabled={(!runAll && test === 0) || tests.length === 0 || builds.length === 0} onClick={() => handleRerun(-1, env, "rerun")}>
           Run
         </button>
-        <button className="medium-button" disabled={(!runAll && test === 0) || tests.length === 0 || builds.length === 0} onClick={() => handleRerun("debug")}>
+        <button className="medium-button" disabled={(!runAll && test === 0) || tests.length === 0 || builds.length === 0} onClick={() => handleRerun(-1, env, "debug")}>
           Debug
         </button>
       </div>

@@ -2,19 +2,39 @@
   margin: 0;
 }
 
+/* Chrome / Edge / Safari */
+*::-webkit-scrollbar {
+  width: 1px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #fff;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 2px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
 input[type="text"],
 input[type="password"],
-select,
-button {
-  padding: 5px 10px;
+select {
   font-size: 14px;
   border-radius: 5px;
   width: 300px;
   height: 35px;
+  padding: 5px 10px;
   border: 1px solid #ccc;
   box-sizing: border-box;
 }
 button {
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
   background: linear-gradient(to bottom, #eee, #ddd, #eee);
 }
 button:hover {

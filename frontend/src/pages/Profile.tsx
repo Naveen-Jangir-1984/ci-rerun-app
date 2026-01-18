@@ -42,10 +42,10 @@ export default function Profile() {
       <input type="text" value={lastName} placeholder="Lastname" onChange={(e) => setLastName(e.target.value)} />
       <input type="password" placeholder={hasPAT ? "Enter a new PAT" : "Enter PAT"} value={pat} onChange={(e) => setPat(e.target.value)} />
       <div className="user-actions">
-        <button className="medium-button" onClick={cancel}>
+        <button className="button medium-button" onClick={cancel}>
           Cancel
         </button>
-        <button className="medium-button" onClick={save}>
+        <button className="button medium-button" onClick={save}>
           Update
         </button>
       </div>

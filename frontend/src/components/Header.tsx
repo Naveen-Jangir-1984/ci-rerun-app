@@ -30,7 +30,7 @@ export default function Header() {
           )}
         </span>
         {/* Logout */}
-        <button className="medium-button logout" onClick={logout}>
+        <button className="medium-button danger" onClick={logout}>
           Sign Out
         </button>
       </div>

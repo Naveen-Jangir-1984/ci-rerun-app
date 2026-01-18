@@ -82,10 +82,10 @@ export default function Register() {
       <input type="password" placeholder="Password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
       <input type="password" placeholder="Confirm" value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} />
       <div className="user-actions">
-        <button className="medium-button" disabled={isResetDisabled} onClick={reset}>
+        <button className="button medium-button" disabled={isResetDisabled} onClick={reset}>
           Reset
         </button>
-        <button className="medium-button" disabled={isSubmitDisabled} onClick={submit}>
+        <button className="button medium-button" disabled={isSubmitDisabled} onClick={submit}>
           Submit
         </button>
       </div>

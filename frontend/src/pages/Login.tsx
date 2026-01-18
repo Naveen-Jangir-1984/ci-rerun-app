@@ -7,7 +7,7 @@ export default function SignIn() {
   const { login } = useAuth();
   const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
   const nav = useNavigate();
-  const [f, setF] = useState<any>({});
+  const [form, setForm] = useState<any>({ team: "", username: "", password: "" });
   const [users, setUsers] = useState<any[]>([]);
   const [message, setMessage] = useState<string>("");
 
@@ -16,34 +16,33 @@ export default function SignIn() {
   }, []);
 
   useEffect(() => {
-    if (!f.team) {
+    if (!form.team) {
       setUsers([]);
-      setF({ ...f, username: "" });
       return;
     }
 
-    getUsersByTeam(f.team).then(setUsers);
-  }, [f.team]);
+    getUsersByTeam(form.team).then(setUsers);
+  }, [form.team]);
 
   async function submit() {
-    const res = await login(f.team, f.username, f.password);
+    const res = await login(form.team, form.username, form.password);
     if (res.status === 401) setMessage(res.error);
     else nav("/dashboard");
   }
 
   function reset() {
-    setF({ team: "", username: "", password: "" });
+    setForm({ team: "", username: "", password: "" });
     setUsers([]);
     setMessage("");
   }
 
-  const isSubmitDisabled = !f.team || !f.username || !f.password;
-  const isResetDisabled = !f.team && !f.username && !f.password;
+  const isSubmitDisabled = !form.team || !form.username || !form.password;
+  const isResetDisabled = !form.team && !form.username && !form.password;
 
   return (
     <div className="login">
       <h2>Sign In</h2>
-      <select onChange={(e) => setF({ ...f, team: e.target.value })} value={f.team}>
+      <select onChange={(e) => setForm({ ...form, team: e.target.value })} value={form.team}>
         <option value="">-- Select Team --</option>
         {teams.map((t) => (
           <option key={t.id} value={t.id}>
@@ -51,7 +50,7 @@ export default function SignIn() {
           </option>
         ))}
       </select>
-      <select value={f.username} onChange={(e) => setF({ ...f, username: e.target.value })} disabled={!f.team}>
+      <select value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} disabled={!form.team}>
         <option value="">-- Select User --</option>
         {users.map((u) => (
           <option key={u.id} value={u.username}>
@@ -59,12 +58,12 @@ export default function SignIn() {
           </option>
         ))}
       </select>
-      <input type="password" disabled={!f.username} placeholder="Enter password" onChange={(e) => setF({ ...f, password: e.target.value })} value={f.password} />
+      <input type="password" value={form.password} disabled={!form.username} placeholder="Password" onChange={(e) => setForm({ ...form, password: e.target.value })} />
       <div className="user-actions">
-        <button className="medium-button" disabled={isResetDisabled} onClick={reset}>
+        <button className="button medium-button" disabled={isResetDisabled} onClick={reset}>
           Reset
         </button>
-        <button className="medium-button" disabled={isSubmitDisabled} onClick={submit}>
+        <button className="button medium-button" disabled={isSubmitDisabled} onClick={submit}>
           Submit
         </button>
       </div>

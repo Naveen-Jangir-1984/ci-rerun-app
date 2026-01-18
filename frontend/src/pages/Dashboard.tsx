@@ -8,7 +8,7 @@ import Results from "../components/Results";
 import Spinner from "../components/Spinner";
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, reflectUserChanges } = useAuth();
   const [projects, setProjects] = useState<any[]>([]);
   const [project, setProject] = useState<string>("");
 
@@ -23,7 +23,7 @@ export default function Dashboard() {
   const [env, setEnv] = useState<string>("qa");
 
   const [message, setMessage] = useState({ color: "", text: "" });
-  const [result, setResult] = useState<any[]>([]);
+  const [result, setResult] = useState<any[]>(user?.result || []);
   const hasPAT = !!user?.pat;
 
   const [spinner, setSpinner] = useState({
@@ -34,7 +34,7 @@ export default function Dashboard() {
   /* Load projects on page load */
   useEffect(() => {
     const projects = async (user: any) => {
-      setSpinner({ visible: true, message: "Loading projects..." });
+      setSpinner({ visible: true, message: `Loading projects...` });
       const res = await getProjects(user);
       if (res.status === 200) {
         setProjects(res.data);
@@ -56,7 +56,7 @@ export default function Dashboard() {
     setRunAll(false);
     setTests([]);
     setTest(0);
-    setResult([]);
+    // setResult([]);
     if (!value) {
       setProject("");
       return;
@@ -72,12 +72,12 @@ export default function Dashboard() {
     setRunAll(false);
     setTests([]);
     setTest(0);
-    setResult([]);
+    // setResult([]);
     if (!value) {
       setRange("");
       return;
     }
-    setSpinner({ visible: true, message: "Loading builds..." });
+    setSpinner({ visible: true, message: `Loading builds...` });
     setRange(value);
     const res = await getBuilds(user, project, value);
     setBuilds(res.data);
@@ -93,18 +93,18 @@ export default function Dashboard() {
     setTest(0);
     setSummary(null);
     setRunAll(false);
-    setResult([]);
+    // setResult([]);
     setMessage({ color: "", text: "" });
     if (!Number(value)) {
       setBuild(0);
       return;
     }
-    setSpinner({ visible: true, message: "Loading pipeline results..." });
+    setSpinner({ visible: true, message: `Loading results for build #${value}...` });
     setBuild(Number(value));
     const res = await getTests(user, project, Number(value));
     setSummary(res.data.summary);
     if (res.status !== 200) {
-      setTests([]);
+      // setTests([]);
       setMessage({ color: "red", text: res.error });
     } else if (res.data.summary.failed === 0) {
       setMessage({ color: "red", text: "No failed tests extracted for the selected build." });
@@ -118,7 +118,7 @@ export default function Dashboard() {
 
   async function handleRunAllChange() {
     setMessage({ color: "", text: "" });
-    setResult([]);
+    // setResult([]);
     setRunAll(!runAll);
     if (!runAll) {
       setTest(0);
@@ -128,16 +128,49 @@ export default function Dashboard() {
   function handleTestChange(value: number) {
     setMessage({ color: "", text: "" });
     setTest(value);
-    setResult([]);
+    // setResult([]);
   }
 
-  async function handleRerun(mode: string) {
-    setResult([]);
-    setSpinner({ visible: true, message: `${mode === "debug" ? "Please wait for Playwright Inspector and Browser to open" : `Running ${runAll ? tests.length : ""} ${runAll ? "tests" : "test"}`}...` });
-    const res = await rerun(runAll ? tests : (tests.filter((t) => t.id === test) as any[]), mode, env);
+  async function handleRerun(runId: number, env: string, mode: string) {
+    // setResult([]);
+    setSpinner({ visible: true, message: `${mode === "debug" ? "Please wait for Playwright Inspector and Browser to open" : `${runId > 0 ? "Re-running" : "Running"} ${runAll && runId < 0 ? tests.length : ""} ${runAll && runId < 0 ? "tests" : "test"}`}...` });
+    let res = null;
+    if (runId < 0 && runAll) {
+      res = await rerun(tests, mode, env);
+    } else if (runId < 0 && !runAll) {
+      res = await rerun(
+        tests.filter((t) => t.id === test),
+        mode,
+        env
+      );
+    } else {
+      const test = [result.find((r) => r.runId === runId).test];
+      res = await rerun(test as any[], mode, env);
+    }
     if (res.status === 200) {
       setMessage({ color: "", text: "" });
-      setResult(res.data.map((r: any) => ({ ...r, logs: cleanPlaywrightLogs(r.logs), isOpen: false })));
+      if (runId > 0) {
+        const updatedResult = result.map((r) => {
+          if (r.runId === runId) {
+            return { ...res.data[0], test: result.find((item) => item.runId === runId).test, runId: r.runId, build: build, env: env, mode: mode, logs: cleanPlaywrightLogs(res.data[0].logs), isOpen: false };
+          }
+          return r;
+        });
+        setResult(updatedResult);
+        reflectUserChanges({ ...user, result: updatedResult });
+      } else if (runId < 0 && result.length > 0) {
+        const testInfo = tests.find((t) => t.id === test);
+        let emptyCounter = 0;
+        let counter = result.length + 1;
+        const updatedResult = [...result, ...res.data.map((r: any) => ({ ...r, test: test > 0 ? testInfo : tests[emptyCounter++], runId: test > 0 ? counter : counter++, build: build, env: env, mode: mode, logs: cleanPlaywrightLogs(r.logs), isOpen: false }))];
+        setResult(updatedResult);
+        reflectUserChanges({ ...user, result: updatedResult });
+      } else {
+        let counter = 0;
+        const updatedResult = res.data.map((r: any) => ({ ...r, test: tests[counter++], runId: counter, build: build, env: env, mode: mode, logs: cleanPlaywrightLogs(r.logs), isOpen: false }));
+        setResult(updatedResult);
+        reflectUserChanges({ ...user, result: updatedResult });
+      }
     } else {
       setMessage({ color: "red", text: res.error });
     }
@@ -164,9 +197,9 @@ export default function Dashboard() {
     return (
       <div
         style={{
-          background: "#000",
+          background: "#fff",
           height: "55vh",
-          color: "#fff",
+          color: "#000",
           padding: "2rem",
           fontFamily: "monospace",
           fontSize: "12px",
@@ -183,7 +216,7 @@ export default function Dashboard() {
   return (
     <div className="dashboard">
       <Filter projects={projects} builds={builds} tests={tests} summary={summary} hasPAT={hasPAT} spinner={spinner} message={message} project={project} range={range} build={build} test={test} env={env} runAll={runAll} handleProjectChange={handleProjectChange} handleRangeChange={handleRangeChange} handleBuildChange={handleBuildChange} handleTestChange={handleTestChange} handleRunAllChange={handleRunAllChange} setEnv={setEnv} handleRerun={handleRerun} />
-      <Results result={result} setResult={setResult} LogsViewer={LogsViewer} />
+      <Results result={result} spinner={spinner} setResult={setResult} handleRerun={handleRerun} LogsViewer={LogsViewer} />
       <Spinner visible={spinner.visible} message={spinner.message} />
     </div>
   );

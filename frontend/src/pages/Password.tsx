@@ -41,10 +41,10 @@ export default function Password() {
       <input type="password" placeholder="New" onChange={(e) => setPassword({ ...password, password: e.target.value })} />
       <input type="password" placeholder="Confirm" onChange={(e) => setPassword({ ...password, confirm: e.target.value })} />
       <div className="user-actions">
-        <button className="medium-button" onClick={cancel}>
+        <button className="button medium-button" onClick={cancel}>
           Cancel
         </button>
-        <button className="medium-button" disabled={isUpdateDisabled} onClick={save}>
+        <button className="button medium-button" disabled={isUpdateDisabled} onClick={save}>
           Update
         </button>
       </div>

@@ -18,8 +18,8 @@ export function AuthProvider({ children }: any) {
   async function login(team: string, username: string, password: string) {
     const res = await loginUser({ team, username, password });
     if (res.status === 200) {
-      setUser(res.data);
-      localStorage.setItem("user", JSON.stringify(res.data));
+      setUser({ ...res.data, result: [] });
+      localStorage.setItem("user", JSON.stringify({ ...res.data, result: [] }));
     }
     return res;
   }
