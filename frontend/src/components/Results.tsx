@@ -39,7 +39,7 @@ export default function Results({ result, spinner, setResult, handleRerun, LogsV
               <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ width: "75%", display: "flex", justifyContent: "flex-start", alignItems: "center", gap: "10px" }}>
                   <div style={{ backgroundColor: "#fff", border: "1px solid #ccc", borderRadius: "5px", padding: "0.25rem 0.5rem", fontSize: "11px" }}>#{r.build}</div>
-                  <div style={{ backgroundColor: "#dde", border: "1px solid #ccc", borderRadius: "5px", padding: "0.25rem 0.5rem", fontSize: "11px" }}>{r.env.toUpperCase()}</div>
+                  <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.25rem 0.5rem", fontSize: "11px" }}>{r.env.toUpperCase()}</div>
                   <div style={{ backgroundColor: r.status === "Passed" ? "#ada" : "#fdd", border: "1px solid #ccc", borderRadius: "5px", padding: "0.25rem 0.5rem", fontSize: "11px" }}>{r.status}</div>
                   <div style={{ fontSize: "14px" }}>
                     {r.test.featureName} → {r.test.scenarioName} {r.test.example ? `(${r.test.example})` : ""}
@@ -50,7 +50,7 @@ export default function Results({ result, spinner, setResult, handleRerun, LogsV
                     {`${r.isOpen ? "Hide" : "Show"} Log`}
                   </button>
                   <button className="small-button" onClick={() => handleRerun(r.runId, r.env, r.mode)}>
-                    Rerun
+                    {r.mode === "rerun" ? "Re.run" : "Re.debug"}
                   </button>
                   <button className="small-button danger" onClick={() => handleDelete(r.runId)}>
                     Delete
