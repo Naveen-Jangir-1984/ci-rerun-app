@@ -152,7 +152,7 @@ export default function Dashboard() {
       if (runId > 0) {
         const updatedResult = result.map((r) => {
           if (r.runId === runId) {
-            return { ...res.data[0], test: result.find((item) => item.runId === runId).test, runId: r.runId, build: build, env: env, mode: mode, logs: cleanPlaywrightLogs(res.data[0].logs), isOpen: false };
+            return { ...res.data[0], test: result.find((item) => item.runId === runId).test, runId: r.runId, build: r.build, env: env, mode: mode, logs: cleanPlaywrightLogs(res.data[0].logs), isOpen: false };
           }
           return r;
         });
