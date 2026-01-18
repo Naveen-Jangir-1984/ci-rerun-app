@@ -97,7 +97,7 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
           <div className="filter-result">
             <span style={{ backgroundColor: "#def" }}>{`Total ${summary?.total || 0}`}</span>
             <span style={{ backgroundColor: "#dfd" }}>{`Passed ${summary?.passed || 0}`}</span>
-            <span style={{ backgroundColor: "#fdd" }}>{`Failed ${summary?.failed || 0}`}</span>
+            <span style={{ fontWeight: "bold", backgroundColor: "#fdd" }}>{`Failed ${summary?.failed || 0}`}</span>
             <label htmlFor="runall">
               <input id="runall" type="checkbox" disabled={builds.length === 0} checked={runAll} onChange={handleRunAllChange} />
               <span>Run All Failed</span>

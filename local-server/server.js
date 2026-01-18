@@ -130,6 +130,9 @@ async function runPlaywright(title, mode, env) {
         cwd: config.playwrightRepoPath,
         env: Object.assign({}, process.env, {
           TEST_ENV: env,
+          HEADLESS: "false",
+          WORKERS: "1",
+          RETRIES: "0",
         }),
       },
       (err, stdout, stderr) => {
