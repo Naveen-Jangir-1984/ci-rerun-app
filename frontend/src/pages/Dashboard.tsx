@@ -34,7 +34,7 @@ export default function Dashboard() {
   /* Load projects on page load */
   useEffect(() => {
     const projects = async (user: any) => {
-      setSpinner({ visible: true, message: `Loading projects...` });
+      setSpinner({ visible: true, message: `Loading Projects...` });
       const res = await getProjects(user);
       if (res.status === 200) {
         setProjects(res.data);
@@ -77,7 +77,7 @@ export default function Dashboard() {
       setRange("");
       return;
     }
-    setSpinner({ visible: true, message: `Loading builds...` });
+    setSpinner({ visible: true, message: `Loading Builds...` });
     setRange(value);
     const res = await getBuilds(user, project, value);
     setBuilds(res.data);
@@ -99,7 +99,7 @@ export default function Dashboard() {
       setBuild(0);
       return;
     }
-    setSpinner({ visible: true, message: `Loading results for build #${value}...` });
+    setSpinner({ visible: true, message: `Loading result for Build #${value}...` });
     setBuild(Number(value));
     const res = await getTests(user, project, Number(value));
     setSummary(res.data.summary);

@@ -1,4 +1,5 @@
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
 require("dotenv").config();
 const crypto = require("crypto");
 const express = require("express");
@@ -6,7 +7,7 @@ const axios = require("axios");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
-const AdmZip = require("adm-zip");
+const unzipper = require("unzipper");
 const { XMLParser } = require("fast-xml-parser");
 const { exec } = require("child_process");
 const ALGORITHM = "aes-256-cbc";
@@ -15,7 +16,6 @@ const KEY = Buffer.from(process.env.PAT_SECRET_KEY);
 const app = express();
 app.use(cors());
 app.use(express.json());
-
 const config = JSON.parse(fs.readFileSync("./config.json", "utf8"));
 
 function decryptPAT(encryptedText) {
@@ -23,7 +23,6 @@ function decryptPAT(encryptedText) {
 
   const [ivHex, encrypted] = encryptedText.split(":");
   const iv = Buffer.from(ivHex, "hex");
-
   const decipher = crypto.createDecipheriv(ALGORITHM, KEY, iv);
   let decrypted = decipher.update(encrypted, "hex", "utf8");
   decrypted += decipher.final("utf8");
@@ -66,22 +65,20 @@ function getTestResults(artifactName) {
   const report = parser.parse(xml);
 
   let counter = 1;
-
   function asArray(v) {
     if (!v) return [];
+
     return Array.isArray(v) ? v : [v];
   }
 
   asArray(report.testsuites?.testsuite).forEach((suite) => {
     asArray(suite.testcase).forEach((tc) => {
       result.summary.total++;
-
       const name = tc["@_name"];
       const classname = tc["@_classname"];
 
       // Split on ›
       const parts = name.split("›").map((p) => p.trim());
-
       const featureName = parts[0];
       let scenarioName = "";
       let example = null;
@@ -135,6 +132,7 @@ async function runPlaywright(title, mode, env) {
           RETRIES: "0",
         }),
       },
+
       (err, stdout, stderr) => {
         if (err) {
           // console.log(stdout);
@@ -149,7 +147,7 @@ async function runPlaywright(title, mode, env) {
           title,
           logs: stdout,
         });
-      }
+      },
     );
   });
 }
@@ -183,7 +181,9 @@ app.post("/getTests", async (req, res) => {
   };
 
   // 🔥 Always delete ExtractedReport folder
-  const rootExtractDir = path.join(process.cwd(), "ExtractedReport");
+
+  const rootExtractDir = path.join(__dirname, "ExtractedReport");
+
   fs.rmSync(rootExtractDir, { recursive: true, force: true });
 
   // 🔁 Re-create clean folder
@@ -200,24 +200,48 @@ app.post("/getTests", async (req, res) => {
     });
   }
 
-  // Download artifact ZIP
-  const zipRes = await axios.get(artifact.resource.downloadUrl, {
-    headers: authHeader,
-    responseType: "arraybuffer",
-  });
-
+  // Download and extract artifact ZIP using streaming for large files
   const extractionDir = path.join(rootExtractDir, artifactName);
   fs.mkdirSync(extractionDir, { recursive: true });
 
-  const zip = new AdmZip(zipRes.data);
+  const response = await axios.get(artifact.resource.downloadUrl, {
+    headers: authHeader,
+    responseType: "stream",
+    maxContentLength: Infinity,
+    maxBodyLength: Infinity,
+  });
 
-  // Extract only .xml files from junit-xml folder
-  zip.getEntries().forEach((entry) => {
-    if (!entry.isDirectory && entry.entryName.startsWith(`${artifactName}/`) && entry.entryName.endsWith(".xml")) {
-      const outputPath = path.join(extractionDir, path.basename(entry.entryName));
+  // Stream and extract only the junit-results.xml file from junit-xml folder
+  await new Promise((resolve, reject) => {
+    let found = false;
 
-      fs.writeFileSync(outputPath, entry.getData());
-    }
+    response.data
+      .pipe(unzipper.Parse())
+      .on("entry", (entry) => {
+        const fileName = entry.path;
+
+        // Look specifically for junit-xml/junit-results.xml
+        if (entry.type !== "Directory" && fileName === "junit-xml/junit-results.xml") {
+          found = true;
+          const outputPath = path.join(extractionDir, "junit.xml");
+          const writeStream = fs.createWriteStream(outputPath);
+
+          writeStream.on("finish", () => {
+            resolve();
+          });
+          writeStream.on("error", (err) => {
+            reject(err);
+          });
+
+          entry.pipe(writeStream);
+        } else {
+          entry.autodrain();
+        }
+      })
+      .on("close", () => {
+        if (!found) return reject(new Error("junit.xml not found in artifact"));
+      })
+      .on("error", reject);
   });
 
   const testResults = getTestResults(artifactName);
