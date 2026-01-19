@@ -26,7 +26,7 @@ export default function Results({ result, spinner, setResult, handleRerun, LogsV
           item.isOpen = !item.isOpen;
         } else item.isOpen = false;
         return item;
-      })
+      }),
     );
   }
 
@@ -47,7 +47,7 @@ export default function Results({ result, spinner, setResult, handleRerun, LogsV
                 </div>
                 <div style={{ width: "25%", display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "10px" }}>
                   <button className="small-button" onClick={() => handleShowHideLog(r.runId)}>
-                    {`${r.isOpen ? "Hide" : "Show"} Log`}
+                    {`${r.isOpen ? "Hide" : "Show"}.Log`}
                   </button>
                   <button className="small-button" onClick={() => handleRerun(r.runId, r.env, r.mode)}>
                     {r.mode === "rerun" ? "Re.run" : "Re.debug"}
@@ -63,7 +63,7 @@ export default function Results({ result, spinner, setResult, handleRerun, LogsV
         </div>
       ) : (
         <div className="results empty" style={{ filter: spinner?.visible ? "blur(5px)" : "none" }}>
-          <span>Rerun result will be displayed here.</span>
+          <span style={{ fontStyle: "italic" }}>Rerun result will be displayed here.</span>
         </div>
       )}
     </>

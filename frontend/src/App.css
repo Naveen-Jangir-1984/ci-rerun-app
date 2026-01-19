@@ -46,17 +46,14 @@
 }
 
 .header .user-name {
-  width: 20%;
   background-color: #eee;
   padding: 0.5rem 1rem;
   border: 1px solid #ccc;
-  font-weight: bold;
   font-size: small;
   border-radius: 7px;
 }
 
 .header .update-user-info {
-  width: auto;
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -64,6 +61,7 @@
 }
 
 .header .user-settings {
+  font-size: small;
   display: flex;
   flex-direction: column;
   position: absolute;
@@ -213,11 +211,11 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 2rem;
+  padding: 3rem 5rem;
   gap: 1rem;
   z-index: 1000;
-  border-radius: 10px;
-  background-color: #eee;
+  border-radius: 15px;
+  background-color: rgba(255, 255, 255, 0.7);
   box-shadow: 0 2px 20px lightgrey;
 }
 

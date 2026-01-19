@@ -172,6 +172,7 @@ async function rerunfailedTests(tests, mode, env) {
 app.post("/getTests", async (req, res) => {
   const { user, projectId, buildId } = req.body;
   const artifactName = "junit-xml";
+  const artifactFileName = "junit.xml";
 
   const base = `https://dev.azure.com/${process.env.AZURE_ORG}/${projectId}`;
   const artifactsUrl = `${base}/_apis/build/builds/${buildId}/artifacts?api-version=7.1-preview.5`;
@@ -221,9 +222,9 @@ app.post("/getTests", async (req, res) => {
         const fileName = entry.path;
 
         // Look specifically for junit-xml/junit-results.xml
-        if (entry.type !== "Directory" && fileName === "junit-xml/junit-results.xml") {
+        if (entry.type !== "Directory" && fileName === `${artifactName}/${artifactFileName}`) {
           found = true;
-          const outputPath = path.join(extractionDir, "junit.xml");
+          const outputPath = path.join(extractionDir, artifactFileName);
           const writeStream = fs.createWriteStream(outputPath);
 
           writeStream.on("finish", () => {
@@ -239,7 +240,12 @@ app.post("/getTests", async (req, res) => {
         }
       })
       .on("close", () => {
-        if (!found) return reject(new Error("junit.xml not found in artifact"));
+        if (!found)
+          return res.json({
+            status: 404,
+            data: [],
+            error: `${artifactFileName} artifact not found`,
+          });
       })
       .on("error", reject);
   });

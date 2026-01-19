@@ -9,21 +9,21 @@ import Spinner from "../components/Spinner";
 
 export default function Dashboard() {
   const { user, reflectUserChanges } = useAuth();
-  const [projects, setProjects] = useState<any[]>([]);
-  const [project, setProject] = useState<string>("");
+  const [projects, setProjects] = useState<any[]>(() => JSON.parse(sessionStorage.getItem("dashboard_projects") || "[]"));
+  const [project, setProject] = useState<string>(() => sessionStorage.getItem("dashboard_project") || "");
 
-  const [builds, setBuilds] = useState<any[]>([]);
+  const [builds, setBuilds] = useState<any[]>(() => JSON.parse(sessionStorage.getItem("dashboard_builds") || "[]"));
   const [range, setRange] = useState("");
-  const [build, setBuild] = useState<number>(0);
+  const [build, setBuild] = useState<number>(() => Number(sessionStorage.getItem("dashboard_build") || 0));
   const [runAll, setRunAll] = useState<boolean>(false);
 
-  const [summary, setSummary] = useState<any>(null);
-  const [tests, setTests] = useState<any[]>([]);
-  const [test, setTest] = useState<number>(0);
-  const [env, setEnv] = useState<string>("qa");
+  const [summary, setSummary] = useState<any>(() => JSON.parse(sessionStorage.getItem("dashboard_summary") || "null"));
+  const [tests, setTests] = useState<any[]>(() => JSON.parse(sessionStorage.getItem("dashboard_tests") || "[]"));
+  const [test, setTest] = useState<number>(() => Number(sessionStorage.getItem("dashboard_test") || 0));
+  const [env, setEnv] = useState<string>(() => sessionStorage.getItem("dashboard_env") || "qa");
 
   const [message, setMessage] = useState({ color: "", text: "" });
-  const [result, setResult] = useState<any[]>(user?.result || []);
+  const [result, setResult] = useState<any[]>(() => JSON.parse(sessionStorage.getItem("dashboard_result") || JSON.stringify(user?.result || [])));
   const hasPAT = !!user?.pat;
 
   const [spinner, setSpinner] = useState({
@@ -38,6 +38,7 @@ export default function Dashboard() {
       const res = await getProjects(user);
       if (res.status === 200) {
         setProjects(res.data);
+        sessionStorage.setItem("dashboard_projects", JSON.stringify(res.data));
       } else {
         setProjects([]);
       }
@@ -46,6 +47,14 @@ export default function Dashboard() {
     setMessage({ color: "", text: "" });
     projects(user);
   }, [project]);
+
+  // Restore other transient state when component mounts
+  useEffect(() => {
+    const storedRange = sessionStorage.getItem("dashboard_range");
+    if (storedRange) setRange(storedRange);
+    const storedRunAll = sessionStorage.getItem("dashboard_runAll");
+    if (storedRunAll) setRunAll(storedRunAll === "true");
+  }, []);
 
   async function handleProjectChange(value: string) {
     setMessage({ color: "", text: "" });
@@ -59,9 +68,11 @@ export default function Dashboard() {
     // setResult([]);
     if (!value) {
       setProject("");
+      sessionStorage.removeItem("dashboard_project");
       return;
     }
     setProject(value);
+    sessionStorage.setItem("dashboard_project", value);
   }
 
   async function handleRangeChange(value: string) {
@@ -75,12 +86,15 @@ export default function Dashboard() {
     // setResult([]);
     if (!value) {
       setRange("");
+      sessionStorage.removeItem("dashboard_range");
       return;
     }
     setSpinner({ visible: true, message: `Loading Builds...` });
     setRange(value);
+    sessionStorage.setItem("dashboard_range", value);
     const res = await getBuilds(user, project, value);
     setBuilds(res.data);
+    sessionStorage.setItem("dashboard_builds", JSON.stringify(res.data));
     if (res.data.length === 0) {
       setMessage({ color: "red", text: "No builds found for the selected range." });
       setRunAll(true);
@@ -101,8 +115,10 @@ export default function Dashboard() {
     }
     setSpinner({ visible: true, message: `Loading result for Build #${value}...` });
     setBuild(Number(value));
+    sessionStorage.setItem("dashboard_build", String(Number(value)));
     const res = await getTests(user, project, Number(value));
     setSummary(res.data.summary);
+    sessionStorage.setItem("dashboard_summary", JSON.stringify(res.data.summary));
     if (res.status !== 200) {
       // setTests([]);
       setMessage({ color: "red", text: res.error });
@@ -112,6 +128,7 @@ export default function Dashboard() {
     } else {
       setMessage({ color: "", text: "" });
       setTests(res.data.failedTests);
+      sessionStorage.setItem("dashboard_tests", JSON.stringify(res.data.failedTests));
     }
     setSpinner({ visible: false, message: "" });
   }
@@ -120,6 +137,7 @@ export default function Dashboard() {
     setMessage({ color: "", text: "" });
     // setResult([]);
     setRunAll(!runAll);
+    sessionStorage.setItem("dashboard_runAll", String(!runAll));
     if (!runAll) {
       setTest(0);
     }
@@ -128,12 +146,13 @@ export default function Dashboard() {
   function handleTestChange(value: number) {
     setMessage({ color: "", text: "" });
     setTest(value);
+    sessionStorage.setItem("dashboard_test", String(value));
     // setResult([]);
   }
 
   async function handleRerun(runId: number, env: string, mode: string) {
     // setResult([]);
-    setSpinner({ visible: true, message: `${runId > 0 ? "Re-running" : "Running"} ${runAll && runId < 0 ? tests.length : ""} ${runAll && runId < 0 ? "tests" : "test"} ${mode === "debug" ? "in debug mode" : ""}...` });
+    setSpinner({ visible: true, message: `${runId > 0 ? "Re-running" : "Running"} ${runAll && runId < 0 ? tests.length : ""} ${runAll && runId < 0 ? "tests" : "test"}${mode === "debug" ? " in debug mode" : ""}...` });
     let res = null;
     if (runId < 0 && runAll) {
       res = await rerun(tests, mode, env);
@@ -141,7 +160,7 @@ export default function Dashboard() {
       res = await rerun(
         tests.filter((t) => t.id === test),
         mode,
-        env
+        env,
       );
     } else {
       const test = [result.find((r) => r.runId === runId).test];
@@ -158,6 +177,7 @@ export default function Dashboard() {
         });
         setResult(updatedResult);
         reflectUserChanges({ ...user, result: updatedResult });
+        sessionStorage.setItem("dashboard_result", JSON.stringify(updatedResult));
       } else if (runId < 0 && result.length > 0) {
         const testInfo = tests.find((t) => t.id === test);
         let emptyCounter = 0;
@@ -165,11 +185,13 @@ export default function Dashboard() {
         const updatedResult = [...result, ...res.data.map((r: any) => ({ ...r, test: test > 0 ? testInfo : tests[emptyCounter++], runId: test > 0 ? counter : counter++, build: build, env: env, mode: mode, logs: cleanPlaywrightLogs(r.logs), isOpen: false }))];
         setResult(updatedResult);
         reflectUserChanges({ ...user, result: updatedResult });
+        sessionStorage.setItem("dashboard_result", JSON.stringify(updatedResult));
       } else {
         let counter = 0;
         const updatedResult = res.data.map((r: any) => ({ ...r, test: tests[counter++], runId: counter, build: build, env: env, mode: mode, logs: cleanPlaywrightLogs(r.logs), isOpen: false }));
         setResult(updatedResult);
         reflectUserChanges({ ...user, result: updatedResult });
+        sessionStorage.setItem("dashboard_result", JSON.stringify(updatedResult));
       }
     } else {
       setMessage({ color: "red", text: res.error });
