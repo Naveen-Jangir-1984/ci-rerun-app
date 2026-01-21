@@ -12,7 +12,7 @@ export default function Results({ result, spinner, setResult, handleRerun, LogsV
   const { user, update } = useAuth();
 
   function handleDelete(runId: number) {
-    const consent = window.confirm("Are you sure you want to delete this result?");
+    const consent = window.confirm("Are you sure you want to delete?");
     if (!consent) return;
     const updatedResult = user.results.filter((item: any) => item.runId !== runId);
     setResult(updatedResult);
@@ -23,13 +23,15 @@ export default function Results({ result, spinner, setResult, handleRerun, LogsV
     const query = e.target.value.toLowerCase();
     if (!query) {
       setResult(user.results);
+      update({ result: user.results.map((r: any) => ({ ...r, isOpen: false })) });
       return;
     }
     const filteredResult = user.results.filter((r: any) => {
       const searchableDate = r.date.toLowerCase().replace(/[-\/]/g, ""); // Remove separators for more flexible searching
       return r.test.featureName.toLowerCase().includes(query) || r.test.scenarioName.toLowerCase().includes(query) || (r.test.example && r.test.example.toLowerCase().includes(query)) || r.status.toLowerCase().includes(query) || r.env.toLowerCase().includes(query) || r.date.toLowerCase().includes(query) || searchableDate.includes(query.replace(/[-\/]/g, "")) || String(`#${r.build}`).includes(query) || r.mode.toLowerCase().includes(query);
     });
-    setResult(filteredResult);
+    setResult(filteredResult.map((r: any) => ({ ...r, isOpen: false })));
+    update({ result: user.results.map((r: any) => ({ ...r, isOpen: false })) });
   }
 
   function handleShowHideLog(runId: number) {

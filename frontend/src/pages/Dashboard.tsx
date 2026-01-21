@@ -174,9 +174,10 @@ export default function Dashboard() {
       })}`;
 
       if (runId > 0) {
-        updatedResult = result.map((r) => {
+        const resultsWithLogsClosed = result.map((r) => ({ ...r, isOpen: false }));
+        updatedResult = resultsWithLogsClosed.map((r) => {
           if (r.runId === runId) {
-            return { ...res.data[0], test: result.find((item) => item.runId === runId).test, runId: r.runId, build: r.build, env: env, mode: mode, logs: cleanPlaywrightLogs(res.data[0].logs), isOpen: false, date: formattedDateTime };
+            return { ...res.data[0], test: result.find((item) => item.runId === runId).test, runId: r.runId, build: r.build, env: env, mode: mode, logs: cleanPlaywrightLogs(res.data[0].logs), isOpen: true, date: formattedDateTime };
           }
           return r;
         });
@@ -184,10 +185,11 @@ export default function Dashboard() {
         const testInfo = tests.find((t) => t.id === test);
         let emptyCounter = 0;
         let counter = result.length + 1;
-        updatedResult = [...result, ...res.data.map((r: any) => ({ ...r, test: test > 0 ? testInfo : tests[emptyCounter++], runId: test > 0 ? counter : counter++, build: build, env: env, mode: mode, logs: cleanPlaywrightLogs(r.logs), isOpen: false, date: formattedDateTime }))];
+        const resultsWithLogsClosed = result.map((r) => ({ ...r, isOpen: false }));
+        updatedResult = [...resultsWithLogsClosed, ...res.data.map((r: any) => ({ ...r, test: test > 0 ? testInfo : tests[emptyCounter++], runId: test > 0 ? counter : counter++, build: build, env: env, mode: mode, logs: cleanPlaywrightLogs(r.logs), isOpen: runAll ? false : true, date: formattedDateTime }))];
       } else {
         let counter = 0;
-        updatedResult = res.data.map((r: any) => ({ ...r, test: tests[counter++], runId: counter, build: build, env: env, mode: mode, logs: cleanPlaywrightLogs(r.logs), isOpen: false, date: formattedDateTime }));
+        updatedResult = res.data.map((r: any) => ({ ...r, test: tests[counter++], runId: counter, build: build, env: env, mode: mode, logs: cleanPlaywrightLogs(r.logs), isOpen: runAll ? false : true, date: formattedDateTime }));
       }
       setResult(updatedResult);
       update({ result: updatedResult });

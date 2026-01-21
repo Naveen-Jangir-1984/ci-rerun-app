@@ -151,7 +151,7 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
 
       <div style={{ color: message.color }}>{message.text}</div>
 
-      {!hasPAT && <p style={{ color: "red" }}>Add PAT in Settings to enable projects</p>}
+      {!hasPAT && <p style={{ color: "red", width: "100%" }}>Add PAT in Settings to enable projects</p>}
     </div>
   );
 }
