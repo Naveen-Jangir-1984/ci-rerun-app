@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { getProfile, updateProfile } from "../api";
+import { getProfile } from "../api";
 import { useAuth } from "../context/AuthContext";
 
 export default function Profile() {
-  const { user, reflectUserChanges } = useAuth();
+  const { user, update } = useAuth();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [pat, setPat] = useState("");
@@ -23,16 +23,18 @@ export default function Profile() {
   }
 
   async function save() {
-    const res = await updateProfile({
-      userId: user.id,
+    const res = await update({
       firstName,
       lastName,
       pat: pat || undefined, // only update if entered
     });
-    reflectUserChanges(res.data);
-    setMessage("Profile updated successfully");
-    setPat("");
-    setTimeout(() => cancel(), 2000);
+    if (res.status === 200) {
+      setMessage("Updated ! Please wait...");
+      setPat("");
+      setTimeout(() => cancel(), 1000);
+    } else {
+      setMessage(res.error);
+    }
   }
 
   return (
@@ -49,7 +51,7 @@ export default function Profile() {
           Update
         </button>
       </div>
-      <div style={{ color: "green" }}>{message}</div>
+      <div style={{ color: message === "Updated ! Please wait..." ? "green" : "red" }}>{message}</div>
     </div>
   );
 }

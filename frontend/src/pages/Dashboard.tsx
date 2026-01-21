@@ -8,22 +8,22 @@ import Results from "../components/Results";
 import Spinner from "../components/Spinner";
 
 export default function Dashboard() {
-  const { user, reflectUserChanges } = useAuth();
-  const [projects, setProjects] = useState<any[]>(() => JSON.parse(sessionStorage.getItem("dashboard_projects") || "[]"));
-  const [project, setProject] = useState<string>(() => sessionStorage.getItem("dashboard_project") || "");
+  const { user, update } = useAuth();
+  const [projects, setProjects] = useState<any[]>(() => JSON.parse(localStorage.getItem("projects") || "[]"));
+  const [project, setProject] = useState<string>(() => localStorage.getItem("project") || "");
 
-  const [builds, setBuilds] = useState<any[]>(() => JSON.parse(sessionStorage.getItem("dashboard_builds") || "[]"));
-  const [range, setRange] = useState("");
-  const [build, setBuild] = useState<number>(() => Number(sessionStorage.getItem("dashboard_build") || 0));
-  const [runAll, setRunAll] = useState<boolean>(false);
+  const [builds, setBuilds] = useState<any[]>(() => JSON.parse(localStorage.getItem("builds") || "[]"));
+  const [range, setRange] = useState(() => localStorage.getItem("range") || "");
+  const [build, setBuild] = useState<number>(() => Number(localStorage.getItem("build") || 0));
+  const [runAll, setRunAll] = useState<boolean>(() => (localStorage.getItem("runAll") === "true" ? true : false));
 
-  const [summary, setSummary] = useState<any>(() => JSON.parse(sessionStorage.getItem("dashboard_summary") || "null"));
-  const [tests, setTests] = useState<any[]>(() => JSON.parse(sessionStorage.getItem("dashboard_tests") || "[]"));
-  const [test, setTest] = useState<number>(() => Number(sessionStorage.getItem("dashboard_test") || 0));
-  const [env, setEnv] = useState<string>(() => sessionStorage.getItem("dashboard_env") || "qa");
+  const [summary, setSummary] = useState<any>(() => JSON.parse(localStorage.getItem("summary") || "null"));
+  const [tests, setTests] = useState<any[]>(() => JSON.parse(localStorage.getItem("tests") || "[]"));
+  const [test, setTest] = useState<number>(() => Number(localStorage.getItem("test") || 0));
+  const [env, setEnv] = useState<string>(() => localStorage.getItem("env") || "qa");
 
   const [message, setMessage] = useState({ color: "", text: "" });
-  const [result, setResult] = useState<any[]>(() => JSON.parse(sessionStorage.getItem("dashboard_result") || JSON.stringify(user?.result || [])));
+  const [result, setResult] = useState<any[]>(() => user?.results || []);
   const hasPAT = !!user?.pat;
 
   const [spinner, setSpinner] = useState({
@@ -34,11 +34,11 @@ export default function Dashboard() {
   /* Load projects on page load */
   useEffect(() => {
     const projects = async (user: any) => {
-      setSpinner({ visible: true, message: `Loading Projects...` });
+      setSpinner({ visible: true, message: `Please wait...` });
       const res = await getProjects(user);
       if (res.status === 200) {
         setProjects(res.data);
-        sessionStorage.setItem("dashboard_projects", JSON.stringify(res.data));
+        localStorage.setItem("projects", JSON.stringify(res.data));
       } else {
         setProjects([]);
       }
@@ -47,14 +47,6 @@ export default function Dashboard() {
     setMessage({ color: "", text: "" });
     projects(user);
   }, [project]);
-
-  // Restore other transient state when component mounts
-  useEffect(() => {
-    const storedRange = sessionStorage.getItem("dashboard_range");
-    if (storedRange) setRange(storedRange);
-    const storedRunAll = sessionStorage.getItem("dashboard_runAll");
-    if (storedRunAll) setRunAll(storedRunAll === "true");
-  }, []);
 
   async function handleProjectChange(value: string) {
     setMessage({ color: "", text: "" });
@@ -68,11 +60,11 @@ export default function Dashboard() {
     // setResult([]);
     if (!value) {
       setProject("");
-      sessionStorage.removeItem("dashboard_project");
+      localStorage.removeItem("project");
       return;
     }
     setProject(value);
-    sessionStorage.setItem("dashboard_project", value);
+    localStorage.setItem("project", value);
   }
 
   async function handleRangeChange(value: string) {
@@ -86,15 +78,15 @@ export default function Dashboard() {
     // setResult([]);
     if (!value) {
       setRange("");
-      sessionStorage.removeItem("dashboard_range");
+      localStorage.removeItem("range");
       return;
     }
     setSpinner({ visible: true, message: `Loading Builds...` });
     setRange(value);
-    sessionStorage.setItem("dashboard_range", value);
+    localStorage.setItem("range", value);
     const res = await getBuilds(user, project, value);
     setBuilds(res.data);
-    sessionStorage.setItem("dashboard_builds", JSON.stringify(res.data));
+    localStorage.setItem("builds", JSON.stringify(res.data));
     if (res.data.length === 0) {
       setMessage({ color: "red", text: "No builds found for the selected range." });
       setRunAll(true);
@@ -115,10 +107,10 @@ export default function Dashboard() {
     }
     setSpinner({ visible: true, message: `Loading result for Build #${value}...` });
     setBuild(Number(value));
-    sessionStorage.setItem("dashboard_build", String(Number(value)));
+    localStorage.setItem("build", String(Number(value)));
     const res = await getTests(user, project, Number(value));
     setSummary(res.data.summary);
-    sessionStorage.setItem("dashboard_summary", JSON.stringify(res.data.summary));
+    localStorage.setItem("summary", JSON.stringify(res.data.summary));
     if (res.status !== 200) {
       // setTests([]);
       setMessage({ color: "red", text: res.error });
@@ -128,7 +120,7 @@ export default function Dashboard() {
     } else {
       setMessage({ color: "", text: "" });
       setTests(res.data.failedTests);
-      sessionStorage.setItem("dashboard_tests", JSON.stringify(res.data.failedTests));
+      localStorage.setItem("tests", JSON.stringify(res.data.failedTests));
     }
     setSpinner({ visible: false, message: "" });
   }
@@ -137,7 +129,7 @@ export default function Dashboard() {
     setMessage({ color: "", text: "" });
     // setResult([]);
     setRunAll(!runAll);
-    sessionStorage.setItem("dashboard_runAll", String(!runAll));
+    localStorage.setItem("runAll", String(!runAll));
     if (!runAll) {
       setTest(0);
     }
@@ -146,7 +138,7 @@ export default function Dashboard() {
   function handleTestChange(value: number) {
     setMessage({ color: "", text: "" });
     setTest(value);
-    sessionStorage.setItem("dashboard_test", String(value));
+    localStorage.setItem("test", String(value));
     // setResult([]);
   }
 
@@ -168,31 +160,38 @@ export default function Dashboard() {
     }
     if (res.status === 200) {
       setMessage({ color: "", text: "" });
+      let updatedResult = [];
+      const d = new Date();
+      const formattedDateTime = `${d.toLocaleDateString("en-GB", {
+        weekday: "short",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })} ${d.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })}`;
+
       if (runId > 0) {
-        const updatedResult = result.map((r) => {
+        updatedResult = result.map((r) => {
           if (r.runId === runId) {
-            return { ...res.data[0], test: result.find((item) => item.runId === runId).test, runId: r.runId, build: r.build, env: env, mode: mode, logs: cleanPlaywrightLogs(res.data[0].logs), isOpen: false };
+            return { ...res.data[0], test: result.find((item) => item.runId === runId).test, runId: r.runId, build: r.build, env: env, mode: mode, logs: cleanPlaywrightLogs(res.data[0].logs), isOpen: false, date: formattedDateTime };
           }
           return r;
         });
-        setResult(updatedResult);
-        reflectUserChanges({ ...user, result: updatedResult });
-        sessionStorage.setItem("dashboard_result", JSON.stringify(updatedResult));
       } else if (runId < 0 && result.length > 0) {
         const testInfo = tests.find((t) => t.id === test);
         let emptyCounter = 0;
         let counter = result.length + 1;
-        const updatedResult = [...result, ...res.data.map((r: any) => ({ ...r, test: test > 0 ? testInfo : tests[emptyCounter++], runId: test > 0 ? counter : counter++, build: build, env: env, mode: mode, logs: cleanPlaywrightLogs(r.logs), isOpen: false }))];
-        setResult(updatedResult);
-        reflectUserChanges({ ...user, result: updatedResult });
-        sessionStorage.setItem("dashboard_result", JSON.stringify(updatedResult));
+        updatedResult = [...result, ...res.data.map((r: any) => ({ ...r, test: test > 0 ? testInfo : tests[emptyCounter++], runId: test > 0 ? counter : counter++, build: build, env: env, mode: mode, logs: cleanPlaywrightLogs(r.logs), isOpen: false, date: formattedDateTime }))];
       } else {
         let counter = 0;
-        const updatedResult = res.data.map((r: any) => ({ ...r, test: tests[counter++], runId: counter, build: build, env: env, mode: mode, logs: cleanPlaywrightLogs(r.logs), isOpen: false }));
-        setResult(updatedResult);
-        reflectUserChanges({ ...user, result: updatedResult });
-        sessionStorage.setItem("dashboard_result", JSON.stringify(updatedResult));
+        updatedResult = res.data.map((r: any) => ({ ...r, test: tests[counter++], runId: counter, build: build, env: env, mode: mode, logs: cleanPlaywrightLogs(r.logs), isOpen: false, date: formattedDateTime }));
       }
+      setResult(updatedResult);
+      update({ result: updatedResult });
+      localStorage.setItem("user", JSON.stringify({ ...user, result: updatedResult }));
     } else {
       setMessage({ color: "red", text: res.error });
     }

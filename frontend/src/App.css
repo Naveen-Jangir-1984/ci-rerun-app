@@ -84,7 +84,7 @@
   border-radius: 8px;
   box-sizing: border-box;
   gap: 15px;
-  width: 40%;
+  width: 37%;
 }
 
 .filter div {
@@ -136,7 +136,7 @@
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  width: 60%;
+  width: 100%;
   max-height: 100%;
 }
 

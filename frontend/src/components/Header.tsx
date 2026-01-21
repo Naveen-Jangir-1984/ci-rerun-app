@@ -20,11 +20,11 @@ export default function Header() {
 
           {open && (
             <div className="user-settings">
-              <div style={{ padding: 5, cursor: "pointer" }} onClick={() => navigate("/changeProfile")}>
+              <div style={{ padding: 5, cursor: "pointer" }} onClick={() => navigate("/profile")}>
                 Update Profile
               </div>
-              <div style={{ padding: 5, cursor: "pointer" }} onClick={() => navigate("/changePassword")}>
-                Change Password
+              <div style={{ padding: 5, cursor: "pointer" }} onClick={() => navigate("/password")}>
+                Update Password
               </div>
             </div>
           )}

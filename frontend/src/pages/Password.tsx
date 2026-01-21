@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { updatePassword } from "../api";
 import { useAuth } from "../context/AuthContext";
 
 export default function Password() {
-  const { user } = useAuth();
+  const { update } = useAuth();
   const [password, setPassword] = useState({
     current: "",
     password: "",
@@ -20,15 +19,16 @@ export default function Password() {
       setMessage("New and Confirm Passwords do not match");
       return;
     }
-    const res = await updatePassword({
-      userId: user.id,
+    const res = await update({
       current: password.current,
       password: password.password,
     });
     if (res.status === 200) {
-      setMessage("Password updated successfully");
+      setMessage("Updated ! Please wait...");
       setPassword({ current: "", password: "", confirm: "" });
-      setTimeout(() => cancel(), 2000);
+      setTimeout(() => cancel(), 1000);
+    } else {
+      setMessage(res.error);
     }
   }
 
@@ -48,7 +48,7 @@ export default function Password() {
           Update
         </button>
       </div>
-      <div style={{ color: message === "Password updated successfully" ? "green" : "red" }}>{message}</div>
+      <div style={{ color: message === "Updated ! Please wait..." ? "green" : "red" }}>{message}</div>
     </div>
   );
 }

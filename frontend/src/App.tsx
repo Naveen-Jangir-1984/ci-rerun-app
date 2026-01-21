@@ -78,7 +78,7 @@ function AppRoutes() {
 
       {/* Change Profile */}
       <Route
-        path="/changeProfile"
+        path="/profile"
         element={
           <ProtectedRoute>
             <Profile />
@@ -88,7 +88,7 @@ function AppRoutes() {
 
       {/* Change Password */}
       <Route
-        path="/changePassword"
+        path="/password"
         element={
           <ProtectedRoute>
             <Password />

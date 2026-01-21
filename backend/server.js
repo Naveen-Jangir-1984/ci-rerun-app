@@ -12,7 +12,7 @@ app.use(
   cors({
     origin: process.env.SERVER_URL,
     credentials: true,
-  })
+  }),
 );
 app.use(express.json());
 
@@ -123,6 +123,7 @@ app.post("/register", async (req, res) => {
     firstName,
     lastName,
     password: await hashPassword(password),
+    results: [],
     pat: "",
   };
 
@@ -146,6 +147,37 @@ app.post("/login", async (req, res) => {
 
   // Never send password back
   const { password: _, ...safeUser } = user;
+
+  res.json({ status: 200, data: safeUser });
+});
+
+app.put("/user/:id", async (req, res) => {
+  const { id } = req.params;
+  const { firstName, lastName, current, password, pat, result } = req.body;
+
+  const db = loadDB();
+
+  const user = db.users.find((u) => u.id === id);
+  if (firstName) user.firstName = firstName;
+  if (lastName) user.lastName = lastName;
+  if (pat) user.pat = encryptPAT(pat, user.id);
+
+  if (current && password) {
+    const isValid = await verifyPassword(current, user.password);
+    if (!isValid) {
+      const { password: _, ...safeUser } = user;
+      return res.json({ status: 401, data: safeUser, error: "Current or new password is incorrect" });
+    }
+    user.password = await hashPassword(password);
+  }
+
+  if (result) {
+    user.results = result;
+  }
+
+  saveDB(db);
+
+  const { password: _, ...safeUser } = user;
   res.json({ status: 200, data: safeUser });
 });
 
@@ -166,39 +198,6 @@ app.get("/profile/:userId", (req, res) => {
     lastName: user.lastName,
     hasPAT: Boolean(user.pat), // 🔒 never send PAT itself
   });
-});
-
-/* ---------------- Update Password -------- */
-app.put("/password", async (req, res) => {
-  const { userId, current, password } = req.body;
-
-  const db = loadDB();
-  const user = db.users.find((u) => u.id === userId);
-
-  const isValid = await verifyPassword(current, user.password);
-  if (!isValid) {
-    return res.status(401).json({ error: "Current password is incorrect" });
-  }
-
-  user.password = await hashPassword(password);
-  saveDB(db);
-
-  res.json({ status: 200 });
-});
-
-/* ---------------- Update Profile --------- */
-app.put("/profile", async (req, res) => {
-  const { userId, firstName, lastName, pat } = req.body;
-
-  const db = loadDB();
-  const user = db.users.find((u) => u.id === userId);
-
-  if (firstName) user.firstName = firstName;
-  if (lastName) user.lastName = lastName;
-  if (pat) user.pat = encryptPAT(pat, user.id);
-
-  saveDB(db);
-  res.json({ status: 200, data: user });
 });
 
 /* ---------------- Get Projects ----------- */
@@ -270,7 +269,7 @@ app.post("/builds", async (req, res) => {
             status: b.status,
           };
         }
-      })
+      }),
     );
 
     res.json({ status: 200, data: enriched });
