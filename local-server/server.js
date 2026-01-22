@@ -182,81 +182,105 @@ app.post("/getTests", async (req, res) => {
     Authorization: "Basic " + Buffer.from(`:${decryptPAT(user.pat)}`).toString("base64"),
   };
 
-  // 🔥 Always delete ExtractedReport folder
-
   const rootExtractDir = path.join(__dirname, "ExtractedReport");
-
   fs.rmSync(rootExtractDir, { recursive: true, force: true });
-
-  // 🔁 Re-create clean folder
   fs.mkdirSync(rootExtractDir, { recursive: true });
 
-  const artifactsRes = await axios.get(artifactsUrl, { headers: authHeader });
-  const artifact = artifactsRes.data.value.find((a) => a.name === artifactName);
+  try {
+    // 📊 Add timing logs
+    console.log(`⏱️  Fetching artifacts list...`);
+    const t1 = Date.now();
 
-  if (!artifact) {
-    return res.json({
-      status: 404,
+    const artifactsRes = await axios.get(artifactsUrl, { headers: authHeader });
+    console.log(`✅ Artifacts list fetched in ${Date.now() - t1}ms`);
+
+    const artifact = artifactsRes.data.value.find((a) => a.name === artifactName);
+
+    if (!artifact) {
+      return res.json({
+        status: 404,
+        data: [],
+        error: `${artifactName} artifact not found`,
+      });
+    }
+
+    const extractionDir = path.join(rootExtractDir, artifactName);
+    fs.mkdirSync(extractionDir, { recursive: true });
+
+    // 📊 Add download timing
+    console.log(`⏱️  Downloading artifact...`);
+    const t2 = Date.now();
+
+    const response = await axios.get(artifact.resource.downloadUrl, {
+      headers: authHeader,
+      responseType: "stream",
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
+      timeout: 120000, // 2 minute timeout
+    });
+
+    console.log(`✅ Download started in ${Date.now() - t2}ms`);
+
+    // 📊 Extract timing
+    const t3 = Date.now();
+    await new Promise((resolve, reject) => {
+      let found = false;
+
+      response.data
+        .pipe(unzipper.Parse())
+        .on("entry", (entry) => {
+          const fileName = entry.path;
+
+          if (entry.type !== "Directory" && fileName === `${artifactName}/${artifactFileName}`) {
+            found = true;
+            const outputPath = path.join(extractionDir, artifactFileName);
+            const writeStream = fs.createWriteStream(outputPath);
+
+            // ✅ Fix: Handle both finish and close
+            let finished = false;
+
+            writeStream.on("finish", () => {
+              finished = true;
+            });
+
+            writeStream.on("close", () => {
+              if (finished) {
+                console.log(`✅ File extracted in ${Date.now() - t3}ms`);
+                resolve();
+              }
+            });
+
+            writeStream.on("error", (err) => {
+              reject(err);
+            });
+
+            entry.pipe(writeStream);
+          } else {
+            entry.autodrain();
+          }
+        })
+        .on("close", () => {
+          if (!found) {
+            reject(new Error(`${artifactFileName} not found in artifact`));
+          }
+        })
+        .on("error", reject);
+    });
+
+    const testResults = getTestResults(artifactName);
+
+    res.json({
+      status: 200,
+      data: testResults,
+    });
+  } catch (error) {
+    console.error("❌ Error in /getTests:", error.message);
+    res.status(500).json({
+      status: 500,
       data: [],
-      error: `${artifactName} artifact not found`,
+      error: error.message,
     });
   }
-
-  // Download and extract artifact ZIP using streaming for large files
-  const extractionDir = path.join(rootExtractDir, artifactName);
-  fs.mkdirSync(extractionDir, { recursive: true });
-
-  const response = await axios.get(artifact.resource.downloadUrl, {
-    headers: authHeader,
-    responseType: "stream",
-    maxContentLength: Infinity,
-    maxBodyLength: Infinity,
-  });
-
-  // Stream and extract only the junit-results.xml file from junit-xml folder
-  await new Promise((resolve, reject) => {
-    let found = false;
-
-    response.data
-      .pipe(unzipper.Parse())
-      .on("entry", (entry) => {
-        const fileName = entry.path;
-
-        // Look specifically for junit-xml/junit-results.xml
-        if (entry.type !== "Directory" && fileName === `${artifactName}/${artifactFileName}`) {
-          found = true;
-          const outputPath = path.join(extractionDir, artifactFileName);
-          const writeStream = fs.createWriteStream(outputPath);
-
-          writeStream.on("finish", () => {
-            resolve();
-          });
-          writeStream.on("error", (err) => {
-            reject(err);
-          });
-
-          entry.pipe(writeStream);
-        } else {
-          entry.autodrain();
-        }
-      })
-      .on("close", () => {
-        if (!found)
-          return res.json({
-            status: 404,
-            data: [],
-            error: `${artifactFileName} artifact not found`,
-          });
-      })
-      .on("error", reject);
-  });
-
-  const testResults = getTestResults(artifactName);
-
-  res.json({
-    status: 200,
-    data: testResults,
-  });
 });
 
 app.post("/rerun", async (req, res) => {
