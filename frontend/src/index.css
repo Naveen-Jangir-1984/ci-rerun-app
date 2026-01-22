@@ -31,6 +31,12 @@ select {
   border: 1px solid #ccc;
   box-sizing: border-box;
 }
+input[type="text"]:focus,
+input[type="password"]:focus,
+select:focus {
+  outline: none;
+  border-color: #888;
+}
 button {
   border-radius: 5px;
   border: 1px solid #ccc;

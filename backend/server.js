@@ -252,6 +252,18 @@ app.post("/builds", async (req, res) => {
     // 2. Enrich builds
     const enriched = await Promise.all(
       builds.map(async (b) => {
+        const formatDate = (iso) =>
+          `${new Date(iso).toLocaleDateString("en-GB", {
+            weekday: "short",
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })} ${new Date(iso).toLocaleTimeString("en-GB", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          })}`;
+
         try {
           await axios.get(`${base}/_apis/test/runs?buildIds=${b.id}&api-version=7.1-preview.7`, { headers: authHeader });
 
@@ -260,6 +272,7 @@ app.post("/builds", async (req, res) => {
             pipelineName: b.definition?.name,
             result: b.result,
             status: b.status,
+            date: formatDate(b.finishTime), // ✅ formatted
           };
         } catch {
           return {
@@ -267,6 +280,7 @@ app.post("/builds", async (req, res) => {
             pipelineName: b.definition?.name,
             result: b.result,
             status: b.status,
+            date: formatDate(b.finishTime), // ✅ formatted
           };
         }
       }),

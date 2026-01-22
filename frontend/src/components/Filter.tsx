@@ -20,7 +20,7 @@ interface FilterProps {
   handleTestChange: (value: number) => void;
   handleRunAllChange: () => void;
   setEnv: (value: string) => void;
-  handleRerun: (id: number, env: string, mode: string) => void;
+  handleRerun: (id: number, build: any, env: string, mode: string) => void;
 }
 
 const TIME_RANGES = [
@@ -141,10 +141,32 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
 
       {/* Rerun button */}
       <div style={{ width: "100%", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-        <button className="medium-button" disabled={(!runAll && test === 0) || tests.length === 0 || builds.length === 0} onClick={() => handleRerun(-1, env, "rerun")}>
+        <button
+          className="medium-button"
+          disabled={(!runAll && test === 0) || tests.length === 0 || builds.length === 0}
+          onClick={() =>
+            handleRerun(
+              -1,
+              builds.find((b) => b.buildId === build),
+              env,
+              "rerun",
+            )
+          }
+        >
           Run
         </button>
-        <button className="medium-button" disabled={(!runAll && test === 0) || tests.length === 0 || builds.length === 0} onClick={() => handleRerun(-1, env, "debug")}>
+        <button
+          className="medium-button"
+          disabled={(!runAll && test === 0) || tests.length === 0 || builds.length === 0}
+          onClick={() =>
+            handleRerun(
+              -1,
+              builds.find((b) => b.buildId === build),
+              env,
+              "debug",
+            )
+          }
+        >
           Debug
         </button>
       </div>

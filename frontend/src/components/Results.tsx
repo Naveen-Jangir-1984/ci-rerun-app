@@ -4,7 +4,7 @@ interface ResultsProps {
   result: any[];
   spinner?: { visible: boolean; message: string };
   setResult: (value: any[]) => void;
-  handleRerun: (id: number, env: string, mode: string) => Promise<void>;
+  handleRerun: (id: number, build: any, env: string, mode: string) => Promise<void>;
   LogsViewer: React.FC<{ logs: string }>;
 }
 
@@ -27,8 +27,9 @@ export default function Results({ result, spinner, setResult, handleRerun, LogsV
       return;
     }
     const filteredResult = user.results.filter((r: any) => {
-      const searchableDate = r.date.toLowerCase().replace(/[-\/]/g, ""); // Remove separators for more flexible searching
-      return r.test.featureName.toLowerCase().includes(query) || r.test.scenarioName.toLowerCase().includes(query) || (r.test.example && r.test.example.toLowerCase().includes(query)) || r.status.toLowerCase().includes(query) || r.env.toLowerCase().includes(query) || r.date.toLowerCase().includes(query) || searchableDate.includes(query.replace(/[-\/]/g, "")) || String(`#${r.build}`).includes(query) || r.mode.toLowerCase().includes(query);
+      const searchableBuildDate = r.build.date.toLowerCase().replace(/[-\/]/g, ""); // Remove separators for more flexible searching
+      const searchableRunDate = r.date.toLowerCase().replace(/[-\/]/g, ""); // Remove separators for more flexible searching
+      return r.test.featureName.toLowerCase().includes(query) || r.test.scenarioName.toLowerCase().includes(query) || (r.test.example && r.test.example.toLowerCase().includes(query)) || r.status.toLowerCase().includes(query) || r.env.toLowerCase().includes(query) || r.date.toLowerCase().includes(query) || searchableBuildDate.includes(query.replace(/[-\/]/g, "")) || searchableRunDate.includes(query.replace(/[-\/]/g, "")) || String(`#${r.build}`).includes(query) || r.mode.toLowerCase().includes(query);
     });
     setResult(filteredResult.map((r: any) => ({ ...r, isOpen: false })));
     update({ result: user.results.map((r: any) => ({ ...r, isOpen: false })) });
@@ -45,36 +46,38 @@ export default function Results({ result, spinner, setResult, handleRerun, LogsV
     update({ result: updatedResult });
   }
 
-  const runInfoStyle = { backgroundColor: "#fff", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem", fontSize: "10px" };
-
   return (
-    <div style={{ display: "flex", width: "65%", flexDirection: "column", filter: spinner?.visible ? "blur(5px)" : "none" }}>
-      <input disabled={spinner?.visible || user.results.length === 0} style={{ fontSize: "12px", width: "100%", marginBottom: "10px" }} type="text" placeholder="search results..." onChange={handleSearch} />
+    <div style={{ display: "flex", width: "65%", height: "100%", flexDirection: "column", gap: "10px", filter: spinner?.visible ? "blur(5px)" : "none" }}>
+      <input disabled={spinner?.visible || user.results.length === 0} style={{ fontSize: "12px", width: "100%", height: "40px" }} type="text" placeholder="search results..." onChange={handleSearch} />
       {result.length > 0 ? (
         <div className="results">
           {result.map((r, idx) => (
             <div key={idx} className="result">
-              <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", flexDirection: "column", width: "100%", gap: "7px" }}>
-                  <div style={{ display: "flex", gap: "5px", color: "#777" }}>
-                    <div style={runInfoStyle}>#{r.build}</div>
-                    <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem", fontSize: "10px" }}>{r.env.toUpperCase()}</div>
-                    <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem", fontSize: "10px" }}>{r.date}</div>
+              <div style={{ display: "flex", flexDirection: "column", width: "100%", gap: "7px" }}>
+                <div style={{ width: "100%", display: "flex", justifyContent: "space-between", gap: "5px", color: "#777" }}>
+                  <div style={{ display: "flex", gap: "5px" }}>
+                    <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem", fontSize: "9px" }}>{r.build.date}</div>
+                    <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem", fontSize: "9px" }}>{`#${r.build.buildId}`}</div>
+                    <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem", fontSize: "9px" }}>{`${r.build.pipelineName}`}</div>
+                    <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem", fontSize: "9px" }}>{r.env.toUpperCase()}</div>
                   </div>
-                  <div style={{ position: "relative", width: "100%", display: "flex", justifyContent: "flex-start", alignItems: "center", gap: "10px" }}>
+                  <div style={{ borderRadius: "5px", padding: "0.2rem", fontSize: "9px" }}>{r.date}</div>
+                </div>
+                <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
+                  <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center", gap: "5px", width: "75%" }}>
                     <div style={{ backgroundColor: r.status === "Passed" ? "#ada" : "#fdd", border: "1px solid #ccc", borderRadius: "5px", padding: "0.25rem 0.5rem", fontSize: "11px" }}>{r.status}</div>
                     <div style={{ fontSize: "12px", width: "65%" }}>{`${r.test.featureName} → ${r.test.scenarioName} ${r.test.example ? `(${r.test.example})` : ""}`}</div>
-                    <div style={{ position: "absolute", right: 0, display: "flex", alignItems: "center", gap: "10px" }}>
-                      <button className="small-button" onClick={() => handleShowHideLog(r.runId)}>
-                        {`${r.isOpen ? "Hide" : "Show"}.Log`}
-                      </button>
-                      <button className="small-button" onClick={() => handleRerun(r.runId, r.env, r.mode)}>
-                        {r.mode === "rerun" ? "Re.run" : "Re.debug"}
-                      </button>
-                      <button className="small-button danger" onClick={() => handleDelete(r.runId)}>
-                        Delete
-                      </button>
-                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "5px", width: "auto" }}>
+                    <button className="small-button" onClick={() => handleShowHideLog(r.runId)}>
+                      {`${r.isOpen ? "Hide" : "Show"}.Log`}
+                    </button>
+                    <button className="small-button" onClick={() => handleRerun(r.runId, r.build, r.env, r.mode)}>
+                      {r.mode === "rerun" ? "Re.run" : "Re.debug"}
+                    </button>
+                    <button className="small-button danger" onClick={() => handleDelete(r.runId)}>
+                      Delete
+                    </button>
                   </div>
                 </div>
               </div>

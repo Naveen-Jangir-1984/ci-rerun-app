@@ -134,22 +134,30 @@
 .results {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   width: 100%;
-  max-height: 100%;
+  gap: 5px;
+  height: 95%;
+  border: 1px solid #ddd;
+  border-radius: 7px;
+  padding: 10px;
+  box-sizing: border-box;
+  overflow: auto;
 }
 
 .result {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  border: 1px solid #ccc;
+  justify-content: flex-start;
+  background-color: #eee;
   border-radius: 7px;
   padding: 10px;
-  margin-bottom: 10px;
   width: 100%;
   box-sizing: border-box;
+}
+.result:hover {
+  background-color: #ddd;
 }
 
 .empty {

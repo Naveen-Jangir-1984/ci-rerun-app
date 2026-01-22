@@ -142,7 +142,7 @@ export default function Dashboard() {
     // setResult([]);
   }
 
-  async function handleRerun(runId: number, env: string, mode: string) {
+  async function handleRerun(runId: number, build: any, env: string, mode: string) {
     // setResult([]);
     setSpinner({ visible: true, message: `${runId > 0 ? "Re-running" : "Running"} ${runAll && runId < 0 ? tests.length : ""} ${runAll && runId < 0 ? "tests" : "test"}${mode === "debug" ? " in debug mode" : ""}...` });
     let res = null;
