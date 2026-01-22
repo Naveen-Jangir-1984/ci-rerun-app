@@ -54,19 +54,19 @@ export default function Results({ result, spinner, setResult, handleRerun, LogsV
           {result.map((r, idx) => (
             <div key={idx} className="result">
               <div style={{ display: "flex", flexDirection: "column", width: "100%", gap: "7px" }}>
-                <div style={{ width: "100%", display: "flex", justifyContent: "space-between", gap: "5px", color: "#777" }}>
-                  <div style={{ display: "flex", gap: "5px" }}>
-                    <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem", fontSize: "9px" }}>{r.build.date}</div>
-                    <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem", fontSize: "9px" }}>{`#${r.build.buildId}`}</div>
-                    <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem", fontSize: "9px" }}>{`${r.build.pipelineName}`}</div>
-                    <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem", fontSize: "9px" }}>{r.env.toUpperCase()}</div>
+                <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "5px", color: "#555" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px" }}>
+                    <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{`${r.build.pipelineName}`}</div>
+                    <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{`#${r.build.buildId}`}</div>
+                    <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{r.env.toUpperCase()}</div>
+                    <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{r.build.date}</div>
                   </div>
-                  <div style={{ borderRadius: "5px", padding: "0.2rem", fontSize: "9px" }}>{r.date}</div>
+                  <div style={{ borderRadius: "5px", padding: "0.2rem", fontSize: "11px" }}>{r.date}</div>
                 </div>
-                <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
-                  <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center", gap: "5px", width: "75%" }}>
-                    <div style={{ backgroundColor: r.status === "Passed" ? "#ada" : "#fdd", border: "1px solid #ccc", borderRadius: "5px", padding: "0.25rem 0.5rem", fontSize: "11px" }}>{r.status}</div>
-                    <div style={{ fontSize: "12px", width: "65%" }}>{`${r.test.featureName} → ${r.test.scenarioName} ${r.test.example ? `(${r.test.example})` : ""}`}</div>
+                <div style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center", gap: "10px", width: "75%" }}>
+                    <div style={{ backgroundColor: r.status === "Passed" ? "#ada" : "#fdd", border: "1px solid #ccc", borderRadius: "5px", padding: "0.25rem 0.5rem", fontSize: "12px" }}>{r.status}</div>
+                    <div style={{ lineHeight: "1.2", fontSize: "12px", width: "65%" }}>{`${r.test.featureName} → ${r.test.scenarioName} ${r.test.example ? `(${r.test.example})` : ""}`}</div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "5px", width: "auto" }}>
                     <button className="small-button" onClick={() => handleShowHideLog(r.runId)}>
