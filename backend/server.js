@@ -8,12 +8,7 @@ const cors = require("cors");
 const { hashPassword, verifyPassword, encryptPAT, decryptPAT } = require("./utils/crypto");
 
 const app = express();
-app.use(
-  cors({
-    origin: process.env.SERVER_URL,
-    credentials: true,
-  }),
-);
+app.use(cors());
 app.use(express.json({ limit: "1gb" }));
 app.use(express.urlencoded({ limit: "1gb", extended: true }));
 
