@@ -14,8 +14,14 @@ const ALGORITHM = "aes-256-cbc";
 const KEY = Buffer.from(process.env.PAT_SECRET_KEY);
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+app.use(
+  cors({
+    origin: process.env.SERVER_URL,
+    credentials: true,
+  }),
+);
+app.use(express.json({ limit: "1gb" }));
+app.use(express.urlencoded({ limit: "1gb", extended: true }));
 const config = JSON.parse(fs.readFileSync("./config.json", "utf8"));
 
 function decryptPAT(encryptedText) {

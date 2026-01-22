@@ -14,7 +14,8 @@ app.use(
     credentials: true,
   }),
 );
-app.use(express.json());
+app.use(express.json({ limit: "1gb" }));
+app.use(express.urlencoded({ limit: "1gb", extended: true }));
 
 const DB_PATH = path.join(__dirname, "db", "data.json");
 

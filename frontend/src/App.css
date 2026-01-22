@@ -138,7 +138,7 @@
   align-items: center;
   width: 100%;
   gap: 5px;
-  height: 95%;
+  max-height: 95%;
   border: 1px solid #ddd;
   border-radius: 7px;
   padding: 10px;
@@ -164,7 +164,7 @@
   color: #555;
   border: 1px dashed #ccc;
   border-radius: 7px;
-  height: 100%;
+  height: auto;
   padding: 1rem;
   justify-content: flex-start;
   box-sizing: border-box;
