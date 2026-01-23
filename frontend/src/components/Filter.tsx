@@ -142,7 +142,7 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
                 backgroundColor: "#fff",
                 border: "1px solid #ccc",
                 borderRadius: "4px",
-                maxHeight: "500px",
+                maxHeight: "300px",
                 overflowY: "auto",
                 zIndex: 1000,
                 marginTop: "1px",

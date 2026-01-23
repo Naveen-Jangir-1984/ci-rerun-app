@@ -44,9 +44,8 @@ function buildPlaywrightTitle(test) {
   return `${test.featureName} ${test.scenarioName}`;
 }
 
-function getTestResults(artifactName) {
-  const EXTRACT_DIR = path.join(__dirname, "ExtractedReport", artifactName);
-
+function getTestResults(junitFilePath) {
+  console.log(junitFilePath);
   const result = {
     summary: {
       total: 0,
@@ -57,17 +56,18 @@ function getTestResults(artifactName) {
     failedTests: [],
   };
 
-  const junitFile = fs.readdirSync(EXTRACT_DIR).find((f) => f.endsWith(".xml"));
-  if (!junitFile) return result;
+  if (!fs.existsSync(junitFilePath)) {
+    console.warn(`⚠️ JUnit file not found at ${junitFilePath}`);
+    return result;
+  }
 
-  const xml = fs.readFileSync(path.join(EXTRACT_DIR, junitFile), "utf8");
+  const xml = fs.readFileSync(junitFilePath, "utf8");
   const parser = new XMLParser({ ignoreAttributes: false });
   const report = parser.parse(xml);
 
   let counter = 1;
   function asArray(v) {
     if (!v) return [];
-
     return Array.isArray(v) ? v : [v];
   }
 
@@ -202,7 +202,6 @@ async function rerunfailedTests(tests, mode, env) {
 
 app.post("/getTests", async (req, res) => {
   const { user, projectId, buildId } = req.body;
-  const artifactName = "junit-xml";
   const artifactFileName = "junit.xml";
 
   const base = `https://dev.azure.com/${process.env.AZURE_ORG}/${projectId}`;
@@ -212,92 +211,41 @@ app.post("/getTests", async (req, res) => {
     Authorization: "Basic " + Buffer.from(`:${decryptPAT(user.pat)}`).toString("base64"),
   };
 
-  const rootExtractDir = path.join(__dirname, "ExtractedReport");
-  fs.rmSync(rootExtractDir, { recursive: true, force: true });
-  fs.mkdirSync(rootExtractDir, { recursive: true });
+  const extractDir = path.join(__dirname, "ExtractedReport");
+  fs.rmSync(extractDir, { recursive: true, force: true });
+  fs.mkdirSync(extractDir, { recursive: true });
 
   try {
-    // 📊 Add timing logs
-    console.log(`⏱️  Fetching artifacts list...`);
-    const t1 = Date.now();
-
+    // 1️⃣ Get artifacts list
     const artifactsRes = await axios.get(artifactsUrl, { headers: authHeader });
-    console.log(`✅ Artifacts list fetched in ${Date.now() - t1}ms`);
 
-    const artifact = artifactsRes.data.value.find((a) => a.name === artifactName);
+    // 🔥 Take the FIRST artifact (since only one exists)
+    const artifact = artifactsRes.data.value[0];
 
     if (!artifact) {
-      return res.json({
+      return res.status(404).json({
         status: 404,
         data: [],
-        error: `${artifactName} artifact not found`,
+        error: "No artifacts found for this build",
       });
     }
 
-    const extractionDir = path.join(rootExtractDir, artifactName);
-    fs.mkdirSync(extractionDir, { recursive: true });
-
-    // 📊 Add download timing
-    console.log(`⏱️  Downloading artifact...`);
-    const t2 = Date.now();
-
+    // 2️⃣ Download artifact ZIP
     const response = await axios.get(artifact.resource.downloadUrl, {
       headers: authHeader,
       responseType: "stream",
-      maxContentLength: Infinity,
-      maxBodyLength: Infinity,
-      timeout: 120000, // 2 minute timeout
+      timeout: 120000,
     });
 
-    console.log(`✅ Download started in ${Date.now() - t2}ms`);
+    // 3️⃣ Extract junit.xml directly
+    const outputPath = path.join(extractDir, artifactFileName);
 
-    // 📊 Extract timing
-    const t3 = Date.now();
     await new Promise((resolve, reject) => {
-      let found = false;
-
-      response.data
-        .pipe(unzipper.Parse())
-        .on("entry", (entry) => {
-          const fileName = entry.path;
-
-          if (entry.type !== "Directory" && fileName === `${artifactName}/${artifactFileName}`) {
-            found = true;
-            const outputPath = path.join(extractionDir, artifactFileName);
-            const writeStream = fs.createWriteStream(outputPath);
-
-            // ✅ Fix: Handle both finish and close
-            let finished = false;
-
-            writeStream.on("finish", () => {
-              finished = true;
-            });
-
-            writeStream.on("close", () => {
-              if (finished) {
-                console.log(`✅ File extracted in ${Date.now() - t3}ms`);
-                resolve();
-              }
-            });
-
-            writeStream.on("error", (err) => {
-              reject(err);
-            });
-
-            entry.pipe(writeStream);
-          } else {
-            entry.autodrain();
-          }
-        })
-        .on("close", () => {
-          if (!found) {
-            reject(new Error(`${artifactFileName} not found in artifact`));
-          }
-        })
-        .on("error", reject);
+      response.data.pipe(unzipper.ParseOne(artifactFileName)).pipe(fs.createWriteStream(outputPath)).on("finish", resolve).on("error", reject);
     });
 
-    const testResults = getTestResults(artifactName);
+    // 4️⃣ Parse results
+    const testResults = getTestResults(outputPath);
 
     res.json({
       status: 200,

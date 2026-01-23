@@ -105,7 +105,7 @@ export default function Dashboard() {
       setBuild(0);
       return;
     }
-    setSpinner({ visible: true, message: `Loading result for Build #${value}...` });
+    setSpinner({ visible: true, message: `Loading Build #${value} result...` });
     setBuild(Number(value));
     localStorage.setItem("build", String(Number(value)));
     const res = await getTests(user, project, Number(value));
@@ -145,7 +145,7 @@ export default function Dashboard() {
   async function handleRerun(runId: number, build: any, env: string, mode: string) {
     const isRerun = runId > 0;
     const isRunAll = runId < 0 && runAll;
-    const testCount = isRunAll ? tests.length : "";
+    const testCount = isRunAll ? tests.length : test.length ? test.length : 1;
     const testLabel = isRunAll ? "tests" : "test";
     const debugMode = mode === "debug" ? " in debug mode" : "";
 
