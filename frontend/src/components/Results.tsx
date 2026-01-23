@@ -66,7 +66,7 @@ export default function Results({ result, spinner, setResult, handleRerun, LogsV
                 <div style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px" }}>
                   <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center", gap: "10px", width: "75%" }}>
                     <div style={{ backgroundColor: r.status === "Passed" ? "#ada" : "#fdd", border: "1px solid #ccc", borderRadius: "5px", padding: "0.25rem 0.5rem", fontSize: "12px" }}>{r.status}</div>
-                    <div style={{ lineHeight: "1.2", fontSize: "12px", width: "65%" }}>{`${r.test.featureName} → ${r.test.scenarioName} ${r.test.example ? `(${r.test.example})` : ""}`}</div>
+                    <div style={{ lineHeight: "1.5", fontSize: "12px", width: "65%" }}>{`${r.test.featureName} → ${r.test.scenarioName} ${r.test.example ? `(${r.test.example})` : ""}`}</div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "5px", width: "auto" }}>
                     <button className="small-button" onClick={() => handleShowHideLog(r.runId)}>

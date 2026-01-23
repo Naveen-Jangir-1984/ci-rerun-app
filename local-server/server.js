@@ -40,7 +40,6 @@ function buildPlaywrightTitle(test) {
   if (test.example) {
     return `${test.featureName} ${test.scenarioName} ${test.example}`;
   }
-
   // Normal scenario
   return `${test.featureName} ${test.scenarioName}`;
 }
@@ -115,37 +114,32 @@ function getTestResults(artifactName) {
   return result;
 }
 
-async function runPlaywright(title, mode, env) {
-  const safeTitle = escapeRegex(title);
-  const cmd = `npx playwright test --grep "${safeTitle}"${mode === "debug" ? " --debug" : ""}`;
+async function runPlaywright(titles, mode, env, workers = 1) {
+  const grep = Array.isArray(titles) ? titles.map((t) => `(${escapeRegex(t)})`).join("|") : escapeRegex(titles);
 
-  // console.log(`▶ CMD: ${cmd}`);
+  const cmd = `npx playwright test --grep "${grep}"${mode === "debug" ? " --debug" : ""} --workers=${workers}`;
 
   return new Promise((resolve) => {
     exec(
       cmd,
       {
         cwd: config.playwrightRepoPath,
-        env: Object.assign({}, process.env, {
+        env: {
+          ...process.env,
           TEST_ENV: env,
           HEADLESS: "false",
-          WORKERS: "1",
           RETRIES: "0",
-        }),
+        },
       },
-
       (err, stdout, stderr) => {
         if (err) {
-          // console.log(stdout);
           return resolve({
             success: false,
-            title,
             logs: stderr || stdout,
           });
         }
         resolve({
           success: true,
-          title,
           logs: stdout,
         });
       },
@@ -154,20 +148,55 @@ async function runPlaywright(title, mode, env) {
 }
 
 async function rerunfailedTests(tests, mode, env) {
-  let results = [];
-  for (const test of tests) {
-    const title = buildPlaywrightTitle(test);
+  // 🐞 DEBUG MODE → ALWAYS SEQUENTIAL
+  if (mode === "debug") {
+    const results = [];
 
-    console.log(`\n🔹 Running: ${test.featureName} › ${test.scenarioName}` + (test.example ? ` › ${test.example}` : ""));
+    for (const test of tests) {
+      const title = buildPlaywrightTitle(test);
 
-    const result = await runPlaywright(title, mode, env);
+      console.log(`\n🔹 Debug run: ${title}`);
 
-    console.log(`${result.success ? "\n✅ PASSED" : "\n❌ FAILED"} → ${title}`);
-    results.push({ status: result.success ? "Passed" : "Failed", title: result.title, logs: result.logs });
+      const result = await runPlaywright(title, mode, env, 1);
+
+      results.push({
+        status: result.success ? "Passed" : "Failed",
+        title,
+        logs: result.logs,
+      });
+    }
+
+    return results;
   }
 
-  console.log("\n🏁 Run completed.");
-  return results;
+  // 🚀 NON-DEBUG MODE
+  // Multiple tests → run together with max 4 workers
+  if (tests.length > 1) {
+    const titles = tests.map(buildPlaywrightTitle);
+
+    console.log(`\n🚀 Running ${titles.length} tests in parallel (max 4 workers)`);
+
+    const result = await runPlaywright(titles, mode, env, 4);
+
+    return titles.map((title) => ({
+      status: result.success ? "Passed" : "Failed",
+      title,
+      logs: result.logs,
+    }));
+  }
+
+  // 🧪 Single test → normal run
+  const title = buildPlaywrightTitle(tests[0]);
+
+  const result = await runPlaywright(title, mode, env, 1);
+
+  return [
+    {
+      status: result.success ? "Passed" : "Failed",
+      title,
+      logs: result.logs,
+    },
+  ];
 }
 
 app.post("/getTests", async (req, res) => {

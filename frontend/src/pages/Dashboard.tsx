@@ -19,7 +19,7 @@ export default function Dashboard() {
 
   const [summary, setSummary] = useState<any>(() => JSON.parse(localStorage.getItem("summary") || "null"));
   const [tests, setTests] = useState<any[]>(() => JSON.parse(localStorage.getItem("tests") || "[]"));
-  const [test, setTest] = useState<number>(() => Number(localStorage.getItem("test") || 0));
+  const [test, setTest] = useState<number[]>(() => JSON.parse(localStorage.getItem("test") || "[]"));
   const [env, setEnv] = useState<string>(() => localStorage.getItem("env") || "qa");
 
   const [message, setMessage] = useState({ color: "", text: "" });
@@ -56,7 +56,7 @@ export default function Dashboard() {
     setSummary(null);
     setRunAll(false);
     setTests([]);
-    setTest(0);
+    setTest([]);
     // setResult([]);
     if (!value) {
       setProject("");
@@ -74,7 +74,7 @@ export default function Dashboard() {
     setSummary(null);
     setRunAll(false);
     setTests([]);
-    setTest(0);
+    setTest([]);
     // setResult([]);
     if (!value) {
       setRange("");
@@ -96,7 +96,7 @@ export default function Dashboard() {
 
   async function handleBuildChange(value: string) {
     setTests([]);
-    setTest(0);
+    setTest([]);
     setSummary(null);
     setRunAll(false);
     // setResult([]);
@@ -131,72 +131,108 @@ export default function Dashboard() {
     setRunAll(!runAll);
     localStorage.setItem("runAll", String(!runAll));
     if (!runAll) {
-      setTest(0);
+      setTest([]);
     }
   }
 
-  function handleTestChange(value: number) {
+  function handleTestChange(value: number[]) {
     setMessage({ color: "", text: "" });
     setTest(value);
-    localStorage.setItem("test", String(value));
+    localStorage.setItem("test", JSON.stringify(value));
     // setResult([]);
   }
 
   async function handleRerun(runId: number, build: any, env: string, mode: string) {
-    // setResult([]);
-    setSpinner({ visible: true, message: `${runId > 0 ? "Re-running" : "Running"} ${runAll && runId < 0 ? tests.length : ""} ${runAll && runId < 0 ? "tests" : "test"}${mode === "debug" ? " in debug mode" : ""}...` });
-    let res = null;
-    if (runId < 0 && runAll) {
-      res = await rerun(tests, mode, env);
-    } else if (runId < 0 && !runAll) {
-      res = await rerun(
-        tests.filter((t) => t.id === test),
-        mode,
-        env,
-      );
+    const isRerun = runId > 0;
+    const isRunAll = runId < 0 && runAll;
+    const testCount = isRunAll ? tests.length : "";
+    const testLabel = isRunAll ? "tests" : "test";
+    const debugMode = mode === "debug" ? " in debug mode" : "";
+
+    setSpinner({
+      visible: true,
+      message: `${isRerun ? "Re-running" : "Running"} ${testCount} ${testLabel}${debugMode}...`,
+    });
+
+    // Determine which tests to run
+    let testsToRun;
+    if (isRunAll) {
+      testsToRun = tests;
+    } else if (runId < 0) {
+      testsToRun = tests.filter((t) => test.includes(t.id));
     } else {
-      const test = [result.find((r) => r.runId === runId).test];
-      res = await rerun(test as any[], mode, env);
+      testsToRun = [result.find((r) => r.runId === runId)?.test];
     }
+
+    const res = await rerun(testsToRun as any[], mode, env);
+
     if (res.status === 200) {
       setMessage({ color: "", text: "" });
-      let updatedResult = [];
-      const d = new Date();
-      const formattedDateTime = `${d.toLocaleDateString("en-GB", {
+      const formattedDateTime = new Date().toLocaleString("en-GB", {
         weekday: "short",
         day: "2-digit",
         month: "short",
         year: "numeric",
-      })} ${d.toLocaleTimeString("en-GB", {
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
-      })}`;
+      });
 
-      if (runId > 0) {
-        const resultsWithLogsClosed = result.map((r) => ({ ...r, isOpen: false }));
-        updatedResult = resultsWithLogsClosed.map((r) => {
-          if (r.runId === runId) {
-            return { ...res.data[0], test: result.find((item) => item.runId === runId).test, runId: r.runId, build: r.build, env: env, mode: mode, logs: cleanPlaywrightLogs(res.data[0].logs), isOpen: true, date: formattedDateTime };
-          }
-          return r;
-        });
-      } else if (runId < 0 && result.length > 0) {
-        const testInfo = tests.find((t) => t.id === test);
-        let emptyCounter = 0;
-        let counter = result.length + 1;
-        const resultsWithLogsClosed = result.map((r) => ({ ...r, isOpen: false }));
-        updatedResult = [...resultsWithLogsClosed, ...res.data.map((r: any) => ({ ...r, test: test > 0 ? testInfo : tests[emptyCounter++], runId: test > 0 ? counter : counter++, build: build, env: env, mode: mode, logs: cleanPlaywrightLogs(r.logs), isOpen: runAll ? false : true, date: formattedDateTime }))];
+      const closeAllLogs = result.map((r) => ({ ...r, isOpen: false }));
+
+      let updatedResult;
+      if (isRerun) {
+        updatedResult = closeAllLogs.map((r) =>
+          r.runId === runId
+            ? {
+                ...res.data[0],
+                test: r.test,
+                runId,
+                build: r.build,
+                env,
+                mode,
+                logs: cleanPlaywrightLogs(res.data[0].logs),
+                isOpen: true,
+                date: formattedDateTime,
+              }
+            : r,
+        );
+      } else if (result.length > 0) {
+        const testInfo = tests.filter((t) => test.includes(t.id));
+        const baseRunId = result.length + 1;
+        const newResults = res.data.map((r: any, idx: number) => ({
+          ...r,
+          test: test.length > 0 ? testInfo[idx] : tests[idx],
+          runId: baseRunId + idx,
+          build,
+          env,
+          mode,
+          logs: cleanPlaywrightLogs(r.logs),
+          isOpen: testInfo.length === 1,
+          date: formattedDateTime,
+        }));
+        updatedResult = [...closeAllLogs, ...newResults];
       } else {
-        let counter = 0;
-        updatedResult = res.data.map((r: any) => ({ ...r, test: tests[counter++], runId: counter, build: build, env: env, mode: mode, logs: cleanPlaywrightLogs(r.logs), isOpen: runAll ? false : true, date: formattedDateTime }));
+        updatedResult = res.data.map((r: any, idx: number) => ({
+          ...r,
+          test: tests[idx],
+          runId: idx + 1,
+          build,
+          env,
+          mode,
+          logs: cleanPlaywrightLogs(r.logs),
+          isOpen: test.length === 1,
+          date: formattedDateTime,
+        }));
       }
+
       setResult(updatedResult);
       update({ result: updatedResult });
       localStorage.setItem("user", JSON.stringify({ ...user, result: updatedResult }));
     } else {
       setMessage({ color: "red", text: res.error });
     }
+
     setSpinner({ visible: false, message: "" });
   }
 
