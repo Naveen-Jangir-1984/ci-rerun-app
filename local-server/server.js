@@ -115,9 +115,10 @@ function getTestResults(artifactName) {
 }
 
 async function runPlaywright(titles, mode, env, workers = 1) {
-  const grep = Array.isArray(titles) ? titles.map((t) => `(${escapeRegex(t)})`).join("|") : escapeRegex(titles);
+  const grep = Array.isArray(titles) ? titles.map((t) => `(${escapeRegex(t)}$)`).join("|") : `${escapeRegex(titles)}$`;
 
   const cmd = `npx playwright test --grep "${grep}"${mode === "debug" ? " --debug" : ""} --workers=${workers}`;
+  console.log(`\n▶️  Executing: ${cmd}\n`);
 
   return new Promise((resolve) => {
     exec(
