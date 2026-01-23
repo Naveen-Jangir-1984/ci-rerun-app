@@ -142,11 +142,26 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
                 backgroundColor: "#fff",
                 border: "1px solid #ccc",
                 borderRadius: "4px",
-                maxHeight: "200px",
+                maxHeight: "500px",
                 overflowY: "auto",
                 zIndex: 1000,
                 marginTop: "1px",
                 boxSizing: "border-box",
+              }}
+              ref={(dropdown) => {
+                if (dropdown) {
+                  const handleClickOutside = (e: MouseEvent) => {
+                    if (!dropdown.parentElement?.contains(e.target as Node)) {
+                      dropdown.style.display = "none";
+                    }
+                  };
+
+                  if (dropdown.style.display === "block") {
+                    document.addEventListener("click", handleClickOutside);
+                  }
+
+                  return () => document.removeEventListener("click", handleClickOutside);
+                }
               }}
             >
               {tests.map((testItem) => (
