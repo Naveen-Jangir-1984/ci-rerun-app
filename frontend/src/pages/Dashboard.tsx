@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getProjects, getBuilds, getTests, rerun } from "../api";
+import { getProjects, getBuilds, getTests, rerun, download } from "../api";
 import { useAuth } from "../context/AuthContext";
 import AnsiToHtml from "ansi-to-html";
 import stripAnsi from "strip-ansi";
@@ -254,6 +254,28 @@ export default function Dashboard() {
     setSpinner({ visible: false, message: "" });
   }
 
+  const handleDownload = async () => {
+    setSpinner({
+      visible: true,
+      message: `Downloading...`,
+    });
+    try {
+      const blob = await download(build, tests);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `test_result_#${build}_${new Date().toISOString().replace(/[.Z]/g, "").replaceAll(/_/g, ":").replace("T", "_")}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      setSpinner({ visible: false, message: "" });
+    } catch (error) {
+      setSpinner({ visible: false, message: "" });
+      setMessage({ color: "red", text: "❌ Failed to download file." });
+    }
+  };
+
   const ansiConverter = new AnsiToHtml({
     fg: "#FFF",
     bg: "#FFF",
@@ -292,7 +314,7 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard">
-      <Filter projects={projects} builds={builds} tests={tests} summary={summary} hasPAT={hasPAT} spinner={spinner} message={message} project={project} range={range} build={build} test={test} env={env} runAll={runAll} handleProjectChange={handleProjectChange} handleRangeChange={handleRangeChange} handleBuildChange={handleBuildChange} handleTestChange={handleTestChange} handleRunAllChange={handleRunAllChange} setEnv={setEnv} handleRerun={handleRerun} />
+      <Filter projects={projects} builds={builds} tests={tests} summary={summary} hasPAT={hasPAT} spinner={spinner} message={message} project={project} range={range} build={build} test={test} env={env} runAll={runAll} handleProjectChange={handleProjectChange} handleRangeChange={handleRangeChange} handleBuildChange={handleBuildChange} handleTestChange={handleTestChange} handleRunAllChange={handleRunAllChange} setEnv={setEnv} handleRerun={handleRerun} handleDownload={handleDownload} />
       <Results result={result} spinner={spinner} setResult={setResult} handleRerun={handleRerun} LogsViewer={LogsViewer} />
       <Spinner visible={spinner.visible} message={spinner.message} />
     </div>

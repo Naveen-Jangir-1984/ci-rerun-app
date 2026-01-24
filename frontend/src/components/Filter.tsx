@@ -19,6 +19,7 @@ interface FilterProps {
   handleBuildChange: (value: string) => void;
   handleTestChange: (value: number[]) => void;
   handleRunAllChange: () => void;
+  handleDownload: () => void;
   setEnv: (value: string) => void;
   handleRerun: (id: number, build: any, env: string, mode: string) => void;
 }
@@ -37,7 +38,7 @@ const ENVIRONMENTS = [
   { label: "STAGING", value: "stg" },
 ];
 
-export default function Filter({ projects, builds, tests, summary, hasPAT, spinner, message, project, range, build, test, env, runAll, handleProjectChange, handleRangeChange, handleBuildChange, handleTestChange, handleRunAllChange, setEnv, handleRerun }: FilterProps) {
+export default function Filter({ projects, builds, tests, summary, hasPAT, spinner, message, project, range, build, test, env, runAll, handleProjectChange, handleRangeChange, handleBuildChange, handleTestChange, handleRunAllChange, setEnv, handleRerun, handleDownload }: FilterProps) {
   return (
     <div className="filter" style={{ filter: spinner.visible ? "blur(5px)" : "none" }}>
       {/* Header */}
@@ -229,7 +230,7 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
 
       {/* Rerun button */}
       <div style={{ width: "100%", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-        <button className="medium-button" disabled={true}>
+        <button className="medium-button" onClick={() => handleDownload()}>
           Download
         </button>
         <button

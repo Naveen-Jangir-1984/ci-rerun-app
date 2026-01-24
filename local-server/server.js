@@ -10,6 +10,7 @@ const path = require("path");
 const unzipper = require("unzipper");
 const { XMLParser } = require("fast-xml-parser");
 const { exec } = require("child_process");
+const ExcelJS = require("exceljs");
 const ALGORITHM = "aes-256-cbc";
 const KEY = Buffer.from(process.env.PAT_SECRET_KEY);
 
@@ -270,6 +271,66 @@ app.post("/rerun", async (req, res) => {
   const r = await rerunfailedTests(tests, mode, env);
 
   res.json({ status: 200, data: r });
+});
+
+app.post("/download", async (req, res) => {
+  const { buildId, tests } = req.body;
+
+  try {
+    // Create Excel workbook
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Test Results");
+
+    // Add headers
+    worksheet.columns = [
+      { header: "Build ID", key: "buildId", width: 15 },
+      { header: "Class Name", key: "classname", width: 50 },
+      { header: "Feature Name", key: "featureName", width: 50 },
+      { header: "Scenario Name", key: "scenarioName", width: 50 },
+      { header: "Example", key: "example", width: 15 },
+    ];
+
+    // Style headers
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFD3D3D3" },
+    };
+    worksheet.getRow(1).alignment = { vertical: "middle", horizontal: "left", wrapText: true };
+
+    // Apply alignment and wrap text to all cells
+    worksheet.eachRow((row) => {
+      row.eachCell((cell) => {
+        cell.alignment = { vertical: "middle", horizontal: "left", wrapText: true };
+      });
+    });
+
+    // Add data rows
+    tests.forEach((test) => {
+      worksheet.addRow({
+        buildId: `#${buildId}` || "",
+        classname: test.classname || "",
+        featureName: test.featureName || "",
+        scenarioName: test.scenarioName || "",
+        example: test.example || "",
+      });
+    });
+
+    // Generate buffer
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    // Send file
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", "attachment; filename=test-results.xlsx");
+    res.send(buffer);
+  } catch (error) {
+    console.error("❌ Error in /download:", error.message);
+    res.json({
+      status: 500,
+      error: error.message,
+    });
+  }
 });
 
 app.listen(4000, () => console.log("✅ Local Server listening on port 4000"));
