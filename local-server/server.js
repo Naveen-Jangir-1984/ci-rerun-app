@@ -45,7 +45,6 @@ function buildPlaywrightTitle(test) {
 }
 
 function getTestResults(junitFilePath) {
-  console.log(junitFilePath);
   const result = {
     summary: {
       total: 0,

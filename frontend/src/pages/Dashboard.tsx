@@ -57,10 +57,17 @@ export default function Dashboard() {
     setRunAll(false);
     setTests([]);
     setTest([]);
-    // setResult([]);
     if (!value) {
       setProject("");
       sessionStorage.removeItem("project");
+      sessionStorage.removeItem("range");
+      sessionStorage.removeItem("builds");
+      sessionStorage.removeItem("build");
+      sessionStorage.removeItem("tests");
+      sessionStorage.removeItem("summary");
+      sessionStorage.removeItem("runAll");
+      sessionStorage.removeItem("test");
+      sessionStorage.removeItem("env");
       return;
     }
     setProject(value);
@@ -75,10 +82,16 @@ export default function Dashboard() {
     setRunAll(false);
     setTests([]);
     setTest([]);
-    // setResult([]);
     if (!value) {
       setRange("");
       sessionStorage.removeItem("range");
+      sessionStorage.removeItem("builds");
+      sessionStorage.removeItem("build");
+      sessionStorage.removeItem("tests");
+      sessionStorage.removeItem("summary");
+      sessionStorage.removeItem("runAll");
+      sessionStorage.removeItem("test");
+      sessionStorage.removeItem("env");
       return;
     }
     setSpinner({ visible: true, message: `Loading Builds...` });
@@ -99,10 +112,15 @@ export default function Dashboard() {
     setTest([]);
     setSummary(null);
     setRunAll(false);
-    // setResult([]);
     setMessage({ color: "", text: "" });
     if (!Number(value)) {
       setBuild(0);
+      sessionStorage.removeItem("build");
+      sessionStorage.removeItem("tests");
+      sessionStorage.removeItem("summary");
+      sessionStorage.removeItem("runAll");
+      sessionStorage.removeItem("test");
+      sessionStorage.removeItem("env");
       return;
     }
     setSpinner({ visible: true, message: `Loading Build #${value} result...` });
@@ -112,7 +130,6 @@ export default function Dashboard() {
     setSummary(res.data.summary);
     sessionStorage.setItem("summary", JSON.stringify(res.data.summary));
     if (res.status !== 200) {
-      // setTests([]);
       setMessage({ color: "red", text: res.error });
     } else if (res.data.summary.failed === 0) {
       setMessage({ color: "red", text: "No failed tests extracted for the selected build." });
@@ -127,11 +144,13 @@ export default function Dashboard() {
 
   async function handleRunAllChange() {
     setMessage({ color: "", text: "" });
-    // setResult([]);
     setRunAll(!runAll);
     sessionStorage.setItem("runAll", String(!runAll));
     if (!runAll) {
       setTest([]);
+      setEnv("qa");
+      sessionStorage.removeItem("test");
+      sessionStorage.setItem("env", "qa");
     }
   }
 
@@ -139,7 +158,6 @@ export default function Dashboard() {
     setMessage({ color: "", text: "" });
     setTest(value);
     sessionStorage.setItem("test", JSON.stringify(value));
-    // setResult([]);
   }
 
   async function handleRerun(runId: number, build: any, env: string, mode: string) {

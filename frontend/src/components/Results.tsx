@@ -68,7 +68,7 @@ export default function Results({ result, spinner, setResult, handleRerun, LogsV
                     <div style={{ backgroundColor: r.status === "Passed" ? "#ada" : "#fdd", border: "1px solid #ccc", borderRadius: "5px", padding: "0.25rem 0.5rem", fontSize: "12px" }}>{r.status}</div>
                     <div style={{ lineHeight: "1.5", fontSize: "12px", width: "65%" }}>
                       <span>{`${r.test.featureName} →`}</span>
-                      <span style={{ marginLeft: "5px", color: "#c00" }}>{r.test.scenarioName}</span> {r.test.example ? <span style={{ marginLeft: "5px", backgroundColor: "#ccc", padding: "5px 7px", borderRadius: "5px", fontSize: "11px" }}>{r.test.example}</span> : ""}
+                      <span style={{ marginLeft: "5px", color: "#777", fontStyle: "italic" }}>{r.test.scenarioName}</span> {r.test.example ? <span style={{ marginLeft: "5px", backgroundColor: "#ccc", padding: "5px 7px", borderRadius: "5px", fontSize: "11px" }}>{r.test.example}</span> : ""}
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "5px", width: "auto" }}>

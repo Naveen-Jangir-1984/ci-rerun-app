@@ -111,102 +111,113 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
       )}
 
       {/* Failed Tests */}
-      {!runAll && (
-        <div>
-          <span className="filter-field">Failed Test</span>
-          <div style={{ width: "70%", position: "relative" }}>
-            <div
-              style={{
-                border: "1px solid #ccc",
-                borderRadius: "5px",
-                padding: "0.5rem 0.75rem",
-                backgroundColor: tests.length === 0 ? "#e9ecef" : "#fff",
-                cursor: tests.length === 0 ? "not-allowed" : "pointer",
-              }}
-              onClick={(e) => {
-                if (tests.length > 0) {
-                  const dropdown = e.currentTarget.nextElementSibling as HTMLElement;
-                  dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
-                }
-              }}
-            >
-              {test.length === 0 ? "-- select --" : `${tests.filter((t) => (Array.isArray(test) ? test.includes(t.id) : false)).length} selected`}
-            </div>
-            <div
-              style={{
-                display: "none",
-                position: "absolute",
-                top: "100%",
-                left: 0,
-                right: 0,
-                backgroundColor: "#fff",
-                border: "1px solid #ccc",
-                borderRadius: "5px",
-                maxHeight: "300px",
-                overflowY: "auto",
-                zIndex: 1000,
-                marginTop: "1px",
-                boxSizing: "border-box",
-              }}
-              ref={(dropdown) => {
-                if (dropdown) {
-                  const handleClickOutside = (e: MouseEvent) => {
-                    if (!dropdown.parentElement?.contains(e.target as Node)) {
-                      dropdown.style.display = "none";
-                    }
-                  };
-
-                  if (dropdown.style.display === "block") {
-                    document.addEventListener("click", handleClickOutside);
+      {!project ||
+        !range ||
+        !build ||
+        (!runAll && (
+          <div>
+            <span className="filter-field">Failed Test</span>
+            <div style={{ width: "70%", position: "relative" }}>
+              <div
+                style={{
+                  border: "1px solid #ccc",
+                  borderRadius: "5px",
+                  padding: "0.5rem 0.75rem",
+                  backgroundColor: tests.length === 0 ? "#e9ecef" : "#fff",
+                  cursor: tests.length === 0 ? "not-allowed" : "pointer",
+                }}
+                onClick={(e) => {
+                  if (tests.length > 0) {
+                    const dropdown = e.currentTarget.nextElementSibling as HTMLElement;
+                    dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
                   }
-
-                  return () => document.removeEventListener("click", handleClickOutside);
-                }
-              }}
-            >
-              {tests.map((testItem) => (
-                <label
-                  key={testItem.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "0.5rem 0.75rem",
-                    cursor: "pointer",
-                    borderBottom: "1px solid #f0f0f0",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f0f0f0")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <input
-                    type="checkbox"
-                    checked={Array.isArray(test) ? test.includes(testItem.id) : false}
-                    onChange={(e) => {
-                      const currentTests = Array.isArray(test) ? test : [];
-                      if (e.target.checked) {
-                        handleTestChange([...currentTests, testItem.id] as any);
-                      } else {
-                        handleTestChange(currentTests.filter((id) => id !== testItem.id) as any);
+                }}
+              >
+                {test.length === 0 ? "-- select --" : `${tests.filter((t) => (Array.isArray(test) ? test.includes(t.id) : false)).length} selected`}
+              </div>
+              <div
+                style={{
+                  display: "none",
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  right: 0,
+                  backgroundColor: "#fff",
+                  border: "1px solid #ccc",
+                  borderRadius: "5px",
+                  maxHeight: "300px",
+                  overflowY: "auto",
+                  zIndex: 1000,
+                  marginTop: "1px",
+                  boxSizing: "border-box",
+                }}
+                ref={(dropdown) => {
+                  if (dropdown) {
+                    const handleClickOutside = (e: MouseEvent) => {
+                      if (!dropdown.parentElement?.contains(e.target as Node)) {
+                        dropdown.style.display = "none";
                       }
+                    };
+
+                    if (dropdown.style.display === "block") {
+                      document.addEventListener("click", handleClickOutside);
+                    }
+
+                    return () => document.removeEventListener("click", handleClickOutside);
+                  }
+                }}
+              >
+                {tests.map((testItem) => (
+                  <label
+                    key={testItem.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "0.5rem 0.75rem",
+                      cursor: "pointer",
+                      borderBottom: "1px solid #f0f0f0",
                     }}
-                    style={{ marginRight: "10px" }}
-                  />
-                  <span style={{ fontSize: "12px", lineHeight: "1.5" }}>
-                    <span>{`${testItem.featureName} →`}</span>
-                    <span style={{ marginLeft: "5px", color: "#c00" }}>{testItem.scenarioName}</span> {testItem.example ? <span style={{ marginLeft: "5px", backgroundColor: "#ddd", color: "#333", padding: "3px 7px", borderRadius: "5px", fontSize: "11px" }}>{testItem.example}</span> : ""}
-                  </span>
-                </label>
-              ))}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f0f0f0")}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={Array.isArray(test) ? test.includes(testItem.id) : false}
+                      onChange={(e) => {
+                        const currentTests = Array.isArray(test) ? test : [];
+                        if (e.target.checked) {
+                          handleTestChange([...currentTests, testItem.id] as any);
+                        } else {
+                          handleTestChange(currentTests.filter((id) => id !== testItem.id) as any);
+                        }
+                      }}
+                      style={{ marginRight: "10px" }}
+                    />
+                    <span style={{ fontSize: "12px", lineHeight: "1.5" }}>
+                      <span>{`${testItem.featureName} →`}</span>
+                      <span style={{ marginLeft: "5px", color: "#777", fontStyle: "italic" }}>{testItem.scenarioName}</span> {testItem.example ? <span style={{ marginLeft: "5px", backgroundColor: "#ddd", color: "#333", padding: "3px 7px", borderRadius: "5px", fontSize: "11px" }}>{testItem.example}</span> : ""}
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        ))}
 
       {/* Environment selector */}
       {build > 0 && (
         <div>
           <span className="filter-field">Environment</span>
-          <select style={{ width: "70%" }} value={env} disabled={(!runAll && test.length === 0) || tests.length === 0 || builds.length === 0} onChange={(e) => setEnv(e.target.value)}>
+          <select
+            style={{ width: "70%" }}
+            value={env}
+            disabled={(!runAll && test.length === 0) || tests.length === 0 || builds.length === 0}
+            onChange={(e) => {
+              setEnv(e.target.value);
+              sessionStorage.setItem("env", e.target.value);
+            }}
+          >
             {ENVIRONMENTS.map((env) => (
               <option key={env.value} value={env.value}>
                 {env.label}
