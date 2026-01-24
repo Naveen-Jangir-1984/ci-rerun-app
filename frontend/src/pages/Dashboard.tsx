@@ -1,4 +1,4 @@
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { getProjects, getBuilds, getTests, rerun } from "../api";
 import { useAuth } from "../context/AuthContext";
 import AnsiToHtml from "ansi-to-html";
