@@ -118,7 +118,7 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
             <div
               style={{
                 border: "1px solid #ccc",
-                borderRadius: "4px",
+                borderRadius: "5px",
                 padding: "0.5rem 0.75rem",
                 backgroundColor: tests.length === 0 ? "#e9ecef" : "#fff",
                 cursor: tests.length === 0 ? "not-allowed" : "pointer",
@@ -141,7 +141,7 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
                 right: 0,
                 backgroundColor: "#fff",
                 border: "1px solid #ccc",
-                borderRadius: "4px",
+                borderRadius: "5px",
                 maxHeight: "300px",
                 overflowY: "auto",
                 zIndex: 1000,
@@ -189,9 +189,9 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
                         handleTestChange(currentTests.filter((id) => id !== testItem.id) as any);
                       }
                     }}
-                    style={{ marginRight: "8px" }}
+                    style={{ marginRight: "10px" }}
                   />
-                  <span style={{ fontSize: "12px" }}>
+                  <span style={{ fontSize: "12px", lineHeight: "1.5" }}>
                     {testItem.featureName} → {testItem.scenarioName} {testItem.example ? `(${testItem.example})` : ""}
                   </span>
                 </label>

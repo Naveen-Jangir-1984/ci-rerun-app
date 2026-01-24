@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { getProjects, getBuilds, getTests, rerun } from "../api";
 import { useAuth } from "../context/AuthContext";
 import AnsiToHtml from "ansi-to-html";
@@ -9,18 +9,18 @@ import Spinner from "../components/Spinner";
 
 export default function Dashboard() {
   const { user, update } = useAuth();
-  const [projects, setProjects] = useState<any[]>(() => JSON.parse(localStorage.getItem("projects") || "[]"));
-  const [project, setProject] = useState<string>(() => localStorage.getItem("project") || "");
+  const [projects, setProjects] = useState<any[]>(() => JSON.parse(sessionStorage.getItem("projects") || "[]"));
+  const [project, setProject] = useState<string>(() => sessionStorage.getItem("project") || "");
 
-  const [builds, setBuilds] = useState<any[]>(() => JSON.parse(localStorage.getItem("builds") || "[]"));
-  const [range, setRange] = useState(() => localStorage.getItem("range") || "");
-  const [build, setBuild] = useState<number>(() => Number(localStorage.getItem("build") || 0));
-  const [runAll, setRunAll] = useState<boolean>(() => (localStorage.getItem("runAll") === "true" ? true : false));
+  const [builds, setBuilds] = useState<any[]>(() => JSON.parse(sessionStorage.getItem("builds") || "[]"));
+  const [range, setRange] = useState(() => sessionStorage.getItem("range") || "");
+  const [build, setBuild] = useState<number>(() => Number(sessionStorage.getItem("build") || 0));
+  const [runAll, setRunAll] = useState<boolean>(() => (sessionStorage.getItem("runAll") === "true" ? true : false));
 
-  const [summary, setSummary] = useState<any>(() => JSON.parse(localStorage.getItem("summary") || "null"));
-  const [tests, setTests] = useState<any[]>(() => JSON.parse(localStorage.getItem("tests") || "[]"));
-  const [test, setTest] = useState<number[]>(() => JSON.parse(localStorage.getItem("test") || "[]"));
-  const [env, setEnv] = useState<string>(() => localStorage.getItem("env") || "qa");
+  const [summary, setSummary] = useState<any>(() => JSON.parse(sessionStorage.getItem("summary") || "null"));
+  const [tests, setTests] = useState<any[]>(() => JSON.parse(sessionStorage.getItem("tests") || "[]"));
+  const [test, setTest] = useState<number[]>(() => JSON.parse(sessionStorage.getItem("test") || "[]"));
+  const [env, setEnv] = useState<string>(() => sessionStorage.getItem("env") || "qa");
 
   const [message, setMessage] = useState({ color: "", text: "" });
   const [result, setResult] = useState<any[]>(() => user?.results || []);
@@ -38,7 +38,7 @@ export default function Dashboard() {
       const res = await getProjects(user);
       if (res.status === 200) {
         setProjects(res.data);
-        localStorage.setItem("projects", JSON.stringify(res.data));
+        sessionStorage.setItem("projects", JSON.stringify(res.data));
       } else {
         setProjects([]);
       }
@@ -60,11 +60,11 @@ export default function Dashboard() {
     // setResult([]);
     if (!value) {
       setProject("");
-      localStorage.removeItem("project");
+      sessionStorage.removeItem("project");
       return;
     }
     setProject(value);
-    localStorage.setItem("project", value);
+    sessionStorage.setItem("project", value);
   }
 
   async function handleRangeChange(value: string) {
@@ -78,15 +78,15 @@ export default function Dashboard() {
     // setResult([]);
     if (!value) {
       setRange("");
-      localStorage.removeItem("range");
+      sessionStorage.removeItem("range");
       return;
     }
     setSpinner({ visible: true, message: `Loading Builds...` });
     setRange(value);
-    localStorage.setItem("range", value);
+    sessionStorage.setItem("range", value);
     const res = await getBuilds(user, project, value);
     setBuilds(res.data);
-    localStorage.setItem("builds", JSON.stringify(res.data));
+    sessionStorage.setItem("builds", JSON.stringify(res.data));
     if (res.data.length === 0) {
       setMessage({ color: "red", text: "No builds found for the selected range." });
       setRunAll(true);
@@ -107,10 +107,10 @@ export default function Dashboard() {
     }
     setSpinner({ visible: true, message: `Loading Build #${value} result...` });
     setBuild(Number(value));
-    localStorage.setItem("build", String(Number(value)));
+    sessionStorage.setItem("build", String(Number(value)));
     const res = await getTests(user, project, Number(value));
     setSummary(res.data.summary);
-    localStorage.setItem("summary", JSON.stringify(res.data.summary));
+    sessionStorage.setItem("summary", JSON.stringify(res.data.summary));
     if (res.status !== 200) {
       // setTests([]);
       setMessage({ color: "red", text: res.error });
@@ -120,7 +120,7 @@ export default function Dashboard() {
     } else {
       setMessage({ color: "", text: "" });
       setTests(res.data.failedTests);
-      localStorage.setItem("tests", JSON.stringify(res.data.failedTests));
+      sessionStorage.setItem("tests", JSON.stringify(res.data.failedTests));
     }
     setSpinner({ visible: false, message: "" });
   }
@@ -129,7 +129,7 @@ export default function Dashboard() {
     setMessage({ color: "", text: "" });
     // setResult([]);
     setRunAll(!runAll);
-    localStorage.setItem("runAll", String(!runAll));
+    sessionStorage.setItem("runAll", String(!runAll));
     if (!runAll) {
       setTest([]);
     }
@@ -138,7 +138,7 @@ export default function Dashboard() {
   function handleTestChange(value: number[]) {
     setMessage({ color: "", text: "" });
     setTest(value);
-    localStorage.setItem("test", JSON.stringify(value));
+    sessionStorage.setItem("test", JSON.stringify(value));
     // setResult([]);
   }
 
@@ -228,7 +228,7 @@ export default function Dashboard() {
 
       setResult(updatedResult);
       update({ result: updatedResult });
-      localStorage.setItem("user", JSON.stringify({ ...user, result: updatedResult }));
+      sessionStorage.setItem("user", JSON.stringify({ ...user, result: updatedResult }));
     } else {
       setMessage({ color: "red", text: res.error });
     }

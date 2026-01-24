@@ -200,6 +200,10 @@ async function rerunfailedTests(tests, mode, env) {
   ];
 }
 
+app.get("/health", (_, res) => {
+  res.json({ status: "OK" });
+});
+
 app.post("/getTests", async (req, res) => {
   const { user, projectId, buildId } = req.body;
   const artifactFileName = "junit.xml";

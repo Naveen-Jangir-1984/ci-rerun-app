@@ -1,4 +1,4 @@
-import type { JSX } from "react";
+import { useEffect, useState, type JSX } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
@@ -106,13 +106,56 @@ function AppRoutes() {
    Root App
 ---------------------------- */
 export default function App() {
+  const [loading, setLoading] = useState({ status: true, message: "Please wait..." });
+
+  useEffect(() => {
+    const getHealth = async () => {
+      let hostServerDown = false;
+      let clientServerDown = false;
+      try {
+        const hostServer = await fetch(`${import.meta.env.VITE_SERVER_URL}/health`);
+        const hostServerStatus = await hostServer.json();
+        if (hostServerStatus.status !== "OK") {
+          hostServerDown = true;
+        }
+      } catch {
+        hostServerDown = true;
+      }
+      try {
+        const localServer = await fetch(`http://localhost:4000/health`);
+        const localServerStatus = await localServer.json();
+        if (localServerStatus.status !== "OK") {
+          clientServerDown = true;
+        }
+      } catch {
+        clientServerDown = true;
+      }
+      if (hostServerDown && clientServerDown) {
+        setLoading({ status: true, message: "Both servers are down. Please try again later." });
+      } else if (hostServerDown) {
+        setLoading({ status: true, message: "Host server is down. Please contact Naveen Jangir." });
+      } else if (clientServerDown) {
+        setLoading({ status: true, message: "Local server is down. Please ensure it is running." });
+      } else {
+        setLoading({ status: false, message: "" });
+      }
+    };
+    getHealth();
+  }, []);
+
+  // console.log(loading);
+
   return (
     <div className="app">
-      <AuthProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </AuthProvider>
+      {loading.status ? (
+        <div className="loading">{loading.message}</div>
+      ) : (
+        <AuthProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </AuthProvider>
+      )}
     </div>
   );
 }

@@ -76,6 +76,11 @@ function getDateRange(range) {
   return { from, to };
 }
 
+/* ---------------- Health ----------------- */
+app.get("/health", (_, res) => {
+  res.json({ status: "OK" });
+});
+
 /* ---------------- Teams ------------------ */
 app.get("/teams", (_, res) => {
   res.json(loadDB().teams);
