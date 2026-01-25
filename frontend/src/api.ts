@@ -86,11 +86,20 @@ export const rerun = async (tests: any[], mode: string, env: string) => {
   }).then((r) => r.json());
 };
 
-export const download = async (buildId: number, tests: any) => {
-  const res = await fetch(`http://localhost:4000/download`, {
+export const downloadFailures = async (buildId: number, tests: any) => {
+  const res = await fetch(`http://localhost:4000/downloadFailures`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ buildId, tests }),
+  });
+  return res.blob();
+};
+
+export const downloadResults = async (results: any) => {
+  const res = await fetch(`http://localhost:4000/downloadResults`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ results }),
   });
   return res.blob();
 };

@@ -139,6 +139,16 @@
   border-radius: 5px;
 }
 
+.card {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  gap: 10px;
+  box-sizing: border-box;
+}
+
 .results {
   display: flex;
   flex-direction: column;
@@ -152,6 +162,12 @@
   padding: 10px;
   box-sizing: border-box;
   overflow: auto;
+}
+.results label {
+  background-color: #eee;
+}
+.results label:hover {
+  background-color: #ddd;
 }
 
 .result {

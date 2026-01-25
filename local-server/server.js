@@ -273,7 +273,7 @@ app.post("/rerun", async (req, res) => {
   res.json({ status: 200, data: r });
 });
 
-app.post("/download", async (req, res) => {
+app.post("/downloadFailures", async (req, res) => {
   const { buildId, tests } = req.body;
 
   try {
@@ -326,6 +326,79 @@ app.post("/download", async (req, res) => {
     res.send(buffer);
   } catch (error) {
     console.error("❌ Error in /download:", error.message);
+    res.json({
+      status: 500,
+      error: error.message,
+    });
+  }
+});
+
+app.post("/downloadResults", async (req, res) => {
+  const { results } = req.body;
+
+  try {
+    // Create Excel workbook
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Rerun Results");
+
+    // Add headers
+    worksheet.columns = [
+      { header: "S.No", key: "sno", width: 5 },
+      { header: "Build Number", key: "build", width: 10 },
+      { header: "Pipeline Name", key: "pipeline", width: 30 },
+      { header: "Class Name", key: "classname", width: 50 },
+      { header: "Feature Name", key: "featureName", width: 50 },
+      { header: "Scenario Name", key: "scenarioName", width: 50 },
+      { header: "Example", key: "example", width: 15 },
+      { header: "Failed On", key: "failedOn", width: 20 },
+      { header: "Reran On Environment", key: "reranEnv", width: 10 },
+      { header: "Reran On Date", key: "reranOn", width: 20 },
+      { header: "Reran Status", key: "reranStatus", width: 10 },
+    ];
+
+    // Style headers
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFD3D3D3" },
+    };
+    worksheet.getRow(1).alignment = { vertical: "middle", horizontal: "left", wrapText: true };
+
+    // Apply alignment and wrap text to all cells
+    worksheet.eachRow((row) => {
+      row.eachCell((cell) => {
+        cell.alignment = { vertical: "middle", horizontal: "left", wrapText: true };
+      });
+    });
+
+    // Add data rows
+    let counter = 1;
+    results.forEach((result) => {
+      worksheet.addRow({
+        sno: counter++,
+        build: result.build.buildId || "",
+        pipeline: result.build.pipelineName || "",
+        classname: result.test.classname || "",
+        featureName: result.test.featureName || "",
+        scenarioName: result.test.scenarioName || "",
+        example: result.test.example || "",
+        failedOn: result.build.date || "",
+        reranEnv: result.env.toUpperCase() || "",
+        reranOn: result.date || "",
+        reranStatus: result.status || "",
+      });
+    });
+
+    // Generate buffer
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    // Send file
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", "attachment; filename=rerun-results.xlsx");
+    res.send(buffer);
+  } catch (error) {
+    console.error("❌ Error in /downloadResults:", error.message);
     res.json({
       status: 500,
       error: error.message,
