@@ -12,6 +12,7 @@ app.use(cors());
 app.use(express.json({ limit: "1gb" }));
 app.use(express.urlencoded({ limit: "1gb", extended: true }));
 
+const port = 2001;
 const DB_PATH = path.join(__dirname, "db", "data.json");
 
 /* ---------------- Helpers ---------------- */
@@ -293,5 +294,5 @@ app.post("/builds", async (req, res) => {
   }
 });
 
-const server = app.listen(3001, () => console.log("✅ Backend running on port 3001"));
+const server = app.listen(port, () => console.log(`✅ Backend running on port ${port}`));
 server.timeout = 120000;
