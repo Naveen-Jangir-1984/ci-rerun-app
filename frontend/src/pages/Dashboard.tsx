@@ -292,7 +292,7 @@ export default function Dashboard() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `Rerun_Result_${new Date().toISOString().replace(/[.Z]/g, "").replaceAll(/_/g, ":").replace("T", "_")}.xlsx`;
+      link.download = `Reruns_${new Date().toISOString().replace(/[.Z]/g, "").replaceAll(/_/g, ":").replace("T", "_")}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

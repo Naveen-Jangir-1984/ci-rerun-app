@@ -197,7 +197,7 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
                     />
                     <span style={{ fontSize: "12px", lineHeight: "1.5" }}>
                       <span>{`${testItem.featureName} →`}</span>
-                      <span style={{ marginLeft: "5px", color: "#777", fontStyle: "italic" }}>{testItem.scenarioName}</span> {testItem.example ? <span style={{ marginLeft: "5px", backgroundColor: "#ddd", color: "#333", padding: "3px 7px", borderRadius: "5px", fontSize: "11px" }}>{testItem.example}</span> : ""}
+                      <span style={{ marginLeft: "5px", color: "#777", fontStyle: "italic" }}>{testItem.scenarioName}</span> {testItem.example ? <span style={{ marginLeft: "5px", backgroundColor: "#ddd", color: "#555", padding: "3px 7px", borderRadius: "5px", fontSize: "11px" }}>{testItem.example}</span> : ""}
                     </span>
                   </label>
                 ))}

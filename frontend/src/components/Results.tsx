@@ -57,6 +57,8 @@ export default function Results({ result, spinner, setResult, handleRerun, handl
     }
   }
 
+  console.log(result);
+
   return (
     <div style={{ display: "flex", width: "65%", height: "100%", flexDirection: "column", gap: "10px", filter: spinner?.visible ? "blur(5px)" : "none" }}>
       <div style={{ width: "100%", height: "30px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -73,22 +75,24 @@ export default function Results({ result, spinner, setResult, handleRerun, handl
                 <input id={`reran-${r.runId}`} type="checkbox" checked={selectedResults.includes(r.runId)} onChange={() => handleSelection(r.runId, !selectedResults.includes(r.runId))} />
               </label>
               <div className="result">
-                <div style={{ display: "flex", flexDirection: "column", width: "100%", gap: "7px" }}>
-                  <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "5px", color: "#999" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px" }}>
-                      <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{`${r.build.pipelineName}`}</div>
-                      <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{`#${r.build.buildId}`}</div>
-                      <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{r.env.toUpperCase()}</div>
-                      <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{`Ran on ${r.build.date}`}</div>
+                <div style={{ display: "flex", flexDirection: "column", width: "100%", gap: "5px" }}>
+                  <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "5px", color: "#999", fontSize: "11px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                      <div style={{ backgroundColor: "#fff", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{`Failed on ${r.build.date}`}</div>
+                      <div style={{ backgroundColor: "#fff", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{`Pipeline: ${r.build.pipelineName}`}</div>
+                      <div style={{ backgroundColor: "#fff", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{`Build #${r.build.buildId}`}</div>
                     </div>
-                    <div style={{ borderRadius: "5px", padding: "0.2rem", fontSize: "11px" }}>{`Reran on ${r.date}`}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                      <div style={{ backgroundColor: "#fff", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{`Reran on ${r.date}`}</div>
+                      <div style={{ backgroundColor: "#fff", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{`Environment ${r.env.toUpperCase()}`}</div>
+                    </div>
                   </div>
-                  <div style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", fontSize: "12px" }}>
                     <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center", gap: "10px", width: "75%" }}>
-                      <div style={{ backgroundColor: r.status === "Passed" ? "#ada" : "#fdd", border: "1px solid #ccc", borderRadius: "5px", padding: "0.25rem 0.5rem", fontSize: "12px" }}>{r.status}</div>
-                      <div style={{ lineHeight: "1.5", fontSize: "12px", width: "65%" }}>
-                        <span>{`${r.test.featureName} →`}</span>
-                        <span style={{ marginLeft: "5px", color: "#777", fontStyle: "italic" }}>{r.test.scenarioName}</span> {r.test.example ? <span style={{ marginLeft: "5px", backgroundColor: "#ccc", padding: "5px 7px", borderRadius: "5px", fontSize: "11px" }}>{r.test.example}</span> : ""}
+                      <div style={{ backgroundColor: r.status === "Passed" ? "#ada" : "#fdd", border: "1px solid #ccc", borderRadius: "5px", padding: "0.25rem 0.5rem" }}>{r.status}</div>
+                      <div style={{ lineHeight: "1.5", width: "65%" }}>
+                        <span>{`${r.featureName} →`}</span>
+                        <span style={{ marginLeft: "5px", color: "#777", fontStyle: "italic" }}>{r.test.scenarioName}</span> {r.test.example ? <span style={{ marginLeft: "5px", backgroundColor: "#ccc", color: "#555", padding: "5px 7px", borderRadius: "5px", fontSize: "11px" }}>{r.test.example}</span> : ""}
                       </div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "5px", width: "auto" }}>
