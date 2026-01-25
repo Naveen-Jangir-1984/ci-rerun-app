@@ -39,6 +39,7 @@ const ENVIRONMENTS = [
 ];
 
 export default function Filter({ projects, builds, tests, summary, hasPAT, spinner, message, project, range, build, test, env, runAll, handleProjectChange, handleRangeChange, handleBuildChange, handleTestChange, handleRunAllChange, setEnv, handleRerun, handleDownloadFailures }: FilterProps) {
+  const buttonLabel = `${runAll ? "All" : test.length > 0 ? `Selected (${test.length})` : "All"}`;
   return (
     <div className="filter" style={{ filter: spinner.visible ? "blur(5px)" : "none" }}>
       {/* Header */}
@@ -232,10 +233,11 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
       {build ? (
         <div style={{ width: "100%", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
           <button className="medium-button" style={{ width: "auto" }} onClick={() => handleDownloadFailures()}>
-            {`Download Failed Tests ${test.length > 0 ? `(${test.length})` : `(${summary?.failed || 0})`}`}
+            {`Download ${buttonLabel}`}
           </button>
           <button
             className="medium-button"
+            style={{ width: "auto" }}
             disabled={(!runAll && test.length === 0) || tests.length === 0 || builds.length === 0}
             onClick={() =>
               handleRerun(
@@ -246,10 +248,11 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
               )
             }
           >
-            Run
+            {`Run ${buttonLabel}`}
           </button>
           <button
             className="medium-button"
+            style={{ width: "auto" }}
             disabled={(!runAll && test.length === 0) || tests.length === 0 || builds.length === 0}
             onClick={() =>
               handleRerun(
@@ -260,7 +263,7 @@ export default function Filter({ projects, builds, tests, summary, hasPAT, spinn
               )
             }
           >
-            Debug
+            {`Debug ${buttonLabel}`}
           </button>
         </div>
       ) : (

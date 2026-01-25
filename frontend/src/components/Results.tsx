@@ -57,14 +57,17 @@ export default function Results({ result, spinner, setResult, handleRerun, handl
     }
   }
 
-  console.log(result);
+  const totalCount = user.results.length;
+  const searchedCount = result.length;
+  const selectedCount = selectedResults.length;
+  const isSearchActive = searchedCount !== totalCount;
 
   return (
     <div style={{ display: "flex", width: "65%", height: "100%", flexDirection: "column", gap: "10px", filter: spinner?.visible ? "blur(5px)" : "none" }}>
       <div style={{ width: "100%", height: "30px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <input disabled={spinner?.visible || user.results.length === 0} style={{ fontSize: "12px", width: "80%", height: "100%" }} type="text" placeholder="search results..." onChange={handleSearch} />
         <button className="medium-button" style={{ width: "auto" }} disabled={spinner?.visible || result.length === 0} onClick={() => handleDownloadResults(selectedResults)}>
-          {`Download Results (${selectedResults.length ? selectedResults.length : result.length})`}
+          {selectedCount > 0 ? `Download Selected (${selectedCount})` : isSearchActive ? `Download Searched (${searchedCount})` : `Download All`}
         </button>
       </div>
       {result.length > 0 ? (
