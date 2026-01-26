@@ -175,6 +175,8 @@ export default function Filter({ state, dispatch, handleRerun }: FilterProps) {
   );
 
   const handleDownloadFailures = useCallback(async () => {
+    const consent = window.confirm("Do you want to download the failures?");
+    if (!consent) return;
     dispatch({ type: "SET_SPINNER", payload: { visible: true, message: "Downloading failures..." } });
 
     try {
@@ -265,9 +267,16 @@ export default function Filter({ state, dispatch, handleRerun }: FilterProps) {
       {/* Summary and Run All Failed */}
       {!state.spinner.visible && state.build > 0 && state.tests.length > 0 ? (
         <div>
-          <span className="filter-field">Result</span>
+          <span className="filter-field" style={{ display: "flex", justifyContent: "space-between" }}>
+            <span>Result</span>
+            <span>{`${((state.summary?.passed / state.summary?.total) * 100).toFixed(0)} %`}</span>
+          </span>
           <div className="filter-result">
-            <span style={{ backgroundColor: "#def" }}>{`Total ${state.summary?.total || 0}`}</span>
+            <span
+              style={{
+                background: `linear-gradient(to right, #dfd ${((state.summary?.passed / state.summary?.total) * 100).toFixed(0)}%, #fdd ${((state.summary?.failed / state.summary?.total) * 100).toFixed(0)}%)`,
+              }}
+            >{`Total ${state.summary?.total || 0}`}</span>
             <span style={{ backgroundColor: "#dfd" }}>{`Passed ${state.summary?.passed || 0}`}</span>
             <span style={{ fontWeight: "bold", backgroundColor: "#fdd" }}>{`Failed ${state.summary?.failed || 0}`}</span>
             <label htmlFor="runall">
@@ -283,7 +292,10 @@ export default function Filter({ state, dispatch, handleRerun }: FilterProps) {
       {/* Failed Tests */}
       {!state.spinner.visible && state.project && state.range && state.build && state.tests.length > 0 && !state.runAll ? (
         <div>
-          <span className="filter-field">Failed Test</span>
+          <span className="filter-field" style={{ display: "flex", justifyContent: "space-between" }}>
+            <span>Failed</span>
+            <span>{`${((state.summary?.failed / state.summary?.total) * 100).toFixed(0)} %`}</span>
+          </span>
           <div style={{ width: "70%", position: "relative" }}>
             <div
               style={{

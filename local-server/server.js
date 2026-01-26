@@ -20,7 +20,7 @@ app.use(express.json({ limit: "1gb" }));
 app.use(express.urlencoded({ limit: "1gb", extended: true }));
 const config = JSON.parse(fs.readFileSync("./config.json", "utf8"));
 
-function decryptPAT(encryptedText) {
+const decryptPAT = (encryptedText) => {
   if (!encryptedText) return "";
 
   const [ivHex, encrypted] = encryptedText.split(":");
@@ -30,22 +30,22 @@ function decryptPAT(encryptedText) {
   decrypted += decipher.final("utf8");
 
   return decrypted;
-}
+};
 
-function escapeRegex(str) {
+const escapeRegex = (str) => {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
+};
 
-function buildPlaywrightTitle(test) {
+const buildPlaywrightTitle = (test) => {
   // Example-based scenario
   if (test.example) {
     return `${test.featureName} ${test.scenarioName} ${test.example}`;
   }
   // Normal scenario
   return `${test.featureName} ${test.scenarioName}`;
-}
+};
 
-function getTestResults(junitFilePath) {
+const getTestResults = (junitFilePath) => {
   const result = {
     summary: {
       total: 0,
@@ -112,9 +112,9 @@ function getTestResults(junitFilePath) {
   });
 
   return result;
-}
+};
 
-async function runPlaywright(titles, mode, env, workers = 1) {
+const runPlaywright = async (titles, mode, env, workers = 1) => {
   const grep = Array.isArray(titles) ? titles.map((t) => `(${escapeRegex(t)}(?!\\d))`).join("|") : `${escapeRegex(titles)}(?!\\d)`;
 
   const cmd = `npx playwright test --grep "${grep}"${mode === "debug" ? " --debug" : ""} --workers=${workers}`;
@@ -146,9 +146,9 @@ async function runPlaywright(titles, mode, env, workers = 1) {
       },
     );
   });
-}
+};
 
-async function rerunfailedTests(tests, mode, env) {
+const rerunfailedTests = async (tests, mode, env) => {
   // 🐞 DEBUG MODE → ALWAYS SEQUENTIAL
   if (mode === "debug") {
     const results = [];
@@ -198,7 +198,7 @@ async function rerunfailedTests(tests, mode, env) {
       logs: result.logs,
     },
   ];
-}
+};
 
 app.get("/health", (_, res) => {
   res.json({ status: "OK" });

@@ -72,6 +72,8 @@ export default function Results({ state, dispatch, cleanPlaywrightLogs, handleRe
 
   const handleDownloadResults = useCallback(
     async (selectedIds: number[]) => {
+      const consent = window.confirm("Do you want to download the results?");
+      if (!consent) return;
       dispatch({ type: "SET_SPINNER", payload: { visible: true, message: "Downloading results..." } });
 
       try {
@@ -97,7 +99,8 @@ export default function Results({ state, dispatch, cleanPlaywrightLogs, handleRe
 
   const handleDelete = useCallback(
     (runId: number) => {
-      if (!window.confirm("Are you sure you want to delete?")) return;
+      const consent = window.confirm("Are you sure you want to delete this result?");
+      if (!consent) return;
 
       const updatedResult = user.results.filter((item: any) => item.runId !== runId);
       dispatch({ type: "SET_RESULT", payload: updatedResult });
@@ -112,29 +115,25 @@ export default function Results({ state, dispatch, cleanPlaywrightLogs, handleRe
 
       if (!query) {
         dispatch({ type: "SET_RESULT", payload: user.results });
-        update({ result: user.results.map((r: any) => ({ ...r, isOpen: false })) });
         return;
       }
 
       const filteredResult = user.results.filter((r: any) => matchesSearchQuery(r, query)).map((r: any) => ({ ...r, isOpen: false }));
-
       dispatch({ type: "SET_RESULT", payload: filteredResult });
-      update({ result: user.results.map((r: any) => ({ ...r, isOpen: false })) });
     },
-    [user.results, dispatch, update],
+    [user.results, dispatch],
   );
 
   const handleShowHideLog = useCallback(
     (runId: number) => {
       const updatedResult = state.result.map((item: any) => ({
         ...item,
-        isOpen: item.runId === runId ? !item.isOpen : false,
+        isOpen: item.runId === runId ? !item.isOpen : item.isOpen,
       }));
 
       dispatch({ type: "SET_RESULT", payload: updatedResult });
-      update({ result: updatedResult });
     },
-    [state.result, dispatch, update],
+    [state.result, dispatch],
   );
 
   const handleSelection = useCallback((runId: number, isChecked: boolean) => {
@@ -150,7 +149,7 @@ export default function Results({ state, dispatch, cleanPlaywrightLogs, handleRe
   return (
     <div style={{ display: "flex", width: "65%", height: "100%", flexDirection: "column", gap: "10px", filter: state.spinner?.visible ? "blur(5px)" : "none" }}>
       <div style={{ width: "100%", height: "30px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <input disabled={state.spinner?.visible || user.results.length === 0} style={{ fontSize: "12px", width: "80%", height: "100%" }} type="text" placeholder="search results..." onChange={handleSearch} />
+        <input disabled={state.spinner?.visible || user.results.length === 0} style={{ fontSize: "12px", width: "85%", height: "100%" }} type="text" placeholder="search..." onChange={handleSearch} />
         <button className="medium-button" style={{ width: "auto" }} disabled={state.spinner?.visible || state.result.length === 0} onClick={() => handleDownloadResults(selectedResults)}>
           {downloadButtonLabel}
         </button>

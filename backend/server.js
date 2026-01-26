@@ -16,15 +16,15 @@ const port = 2001;
 const DB_PATH = path.join(__dirname, "db", "data.json");
 
 /* ---------------- Helpers ---------------- */
-function loadDB() {
+const loadDB = () => {
   return JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
-}
+};
 
-function saveDB(db) {
+const saveDB = (db) => {
   fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
-}
+};
 
-function getDateRange(range) {
+const getDateRange = (range) => {
   const now = new Date();
   let from, to;
 
@@ -75,7 +75,7 @@ function getDateRange(range) {
   }
 
   return { from, to };
-}
+};
 
 /* ---------------- Health ----------------- */
 app.get("/health", (_, res) => {

@@ -6,29 +6,29 @@ const AuthContext = createContext<any>(null);
 export function AuthProvider({ children }: any) {
   const [user, setUser] = useState(JSON.parse(sessionStorage.getItem("user") || "null"));
 
-  async function register(data: any) {
+  const register = async (data: any) => {
     return await registerUser(data);
-  }
+  };
 
-  async function login(team: string, username: string, password: string) {
+  const login = async (team: string, username: string, password: string) => {
     const res = await loginUser({ team, username, password });
     if (res.status === 200) {
       setUser({ ...res.data });
       sessionStorage.setItem("user", JSON.stringify({ ...res.data }));
     }
     return res;
-  }
+  };
 
-  async function update(data: any) {
+  const update = async (data: any) => {
     const res = await updateUser(user.id, data);
     if (res.status === 200) {
       setUser(res.data);
       sessionStorage.setItem("user", JSON.stringify({ ...res.data }));
     }
     return res;
-  }
+  };
 
-  function logout() {
+  const logout = () => {
     setUser(null);
     sessionStorage.removeItem("user");
     sessionStorage.removeItem("projects");
@@ -42,7 +42,7 @@ export function AuthProvider({ children }: any) {
     sessionStorage.removeItem("runAll");
     sessionStorage.removeItem("env");
     sessionStorage.removeItem("result");
-  }
+  };
 
   return <AuthContext.Provider value={{ user, login, register, update, logout }}>{children}</AuthContext.Provider>;
 }
