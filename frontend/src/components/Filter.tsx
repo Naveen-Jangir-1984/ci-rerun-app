@@ -1,8 +1,27 @@
+import { useCallback, useMemo } from "react";
 import Header from "./Header";
 import { getBuilds, getTests, downloadFailures } from "../api";
 import { useAuth } from "../context/AuthContext";
 
-const TIME_RANGES = [
+// Types
+interface TimeRange {
+  label: string;
+  value: string;
+}
+
+interface Environment {
+  label: string;
+  value: string;
+}
+
+interface FilterProps {
+  state: any;
+  dispatch: React.Dispatch<any>;
+  handleRerun: (runId: number, build: any, env: string, mode: string) => Promise<void>;
+}
+
+// Constants
+const TIME_RANGES: TimeRange[] = [
   { label: "Today", value: "today" },
   { label: "Yesterday", value: "yesterday" },
   { label: "Current Week", value: "current_week" },
@@ -11,146 +30,183 @@ const TIME_RANGES = [
   { label: "Last Month", value: "last_month" },
 ];
 
-const ENVIRONMENTS = [
+const ENVIRONMENTS: Environment[] = [
   { label: "QA", value: "qa" },
   { label: "STAGING", value: "stg" },
 ];
 
-export default function Filter({ state, dispatch, handleRerun }: { state: any; dispatch: any; handleRerun: any }) {
+const SESSION_KEYS = ["project", "range", "builds", "build", "tests", "summary", "runAll", "test", "env"] as const;
+
+// Helper functions
+const clearSessionStorage = (keys: readonly string[]) => {
+  keys.forEach((key) => sessionStorage.removeItem(key));
+};
+
+const resetCommonState = (dispatch: React.Dispatch<any>) => {
+  dispatch({ type: "SET_MESSAGE", payload: { color: "", text: "" } });
+  dispatch({ type: "SET_TESTS", payload: [] });
+  dispatch({ type: "SET_TEST", payload: [] });
+  dispatch({ type: "SET_SUMMARY", payload: null });
+  dispatch({ type: "SET_RUN_ALL", payload: false });
+};
+
+const generateFileName = (buildId: number): string => {
+  const timestamp = new Date().toISOString().replace(/[.Z]/g, "").replaceAll(/_/g, ":").replace("T", "_");
+  return `Failures_#${buildId}_${timestamp}.xlsx`;
+};
+
+export default function Filter({ state, dispatch, handleRerun }: FilterProps) {
   const { user } = useAuth();
 
-  const handleProjectChange = (value: string) => {
-    dispatch({ type: "SET_MESSAGE", payload: { color: "", text: "" } });
-    dispatch({ type: "SET_RANGE", payload: "" });
-    dispatch({ type: "SET_BUILDS", payload: [] });
-    dispatch({ type: "SET_BUILD", payload: 0 });
-    dispatch({ type: "SET_SUMMARY", payload: null });
-    dispatch({ type: "SET_RUN_ALL", payload: false });
-    dispatch({ type: "SET_TESTS", payload: [] });
-    dispatch({ type: "SET_TEST", payload: [] });
-    if (!value) {
-      dispatch({ type: "SET_PROJECT", payload: "" });
-      sessionStorage.removeItem("project");
-      sessionStorage.removeItem("range");
-      sessionStorage.removeItem("builds");
-      sessionStorage.removeItem("build");
-      sessionStorage.removeItem("tests");
-      sessionStorage.removeItem("summary");
-      sessionStorage.removeItem("runAll");
-      sessionStorage.removeItem("test");
-      sessionStorage.removeItem("env");
-      return;
-    }
-    dispatch({ type: "SET_PROJECT", payload: value });
-    sessionStorage.setItem("project", value);
-  };
-
-  const handleRangeChange = async (value: string) => {
-    dispatch({ type: "SET_MESSAGE", payload: { color: "", text: "" } });
-    dispatch({ type: "SET_BUILDS", payload: [] });
-    dispatch({ type: "SET_BUILD", payload: 0 });
-    dispatch({ type: "SET_SUMMARY", payload: null });
-    dispatch({ type: "SET_RUN_ALL", payload: false });
-    dispatch({ type: "SET_TESTS", payload: [] });
-    dispatch({ type: "SET_TEST", payload: [] });
-    if (!value) {
+  const handleProjectChange = useCallback(
+    (value: string) => {
+      resetCommonState(dispatch);
       dispatch({ type: "SET_RANGE", payload: "" });
-      sessionStorage.removeItem("range");
-      sessionStorage.removeItem("builds");
-      sessionStorage.removeItem("build");
-      sessionStorage.removeItem("tests");
-      sessionStorage.removeItem("summary");
-      sessionStorage.removeItem("runAll");
-      sessionStorage.removeItem("test");
-      sessionStorage.removeItem("env");
-      return;
-    }
-    dispatch({ type: "SET_SPINNER", payload: { visible: true, message: `Loading Builds...` } });
-    dispatch({ type: "SET_RANGE", payload: value });
-    sessionStorage.setItem("range", value);
-    const res = await getBuilds(user, state.project, value);
-    dispatch({ type: "SET_BUILDS", payload: res.data });
-    sessionStorage.setItem("builds", JSON.stringify(res.data));
-    if (res.data.length === 0) {
-      dispatch({ type: "SET_MESSAGE", payload: { color: "red", text: "No builds found for the selected range." } });
-      dispatch({ type: "SET_RUN_ALL", payload: true });
-    }
-    dispatch({ type: "SET_SPINNER", payload: { visible: false, message: "" } });
-  };
-
-  const handleBuildChange = async (value: string) => {
-    dispatch({ type: "SET_TESTS", payload: [] });
-    dispatch({ type: "SET_TEST", payload: [] });
-    dispatch({ type: "SET_SUMMARY", payload: null });
-    dispatch({ type: "SET_RUN_ALL", payload: false });
-    dispatch({ type: "SET_MESSAGE", payload: { color: "", text: "" } });
-    if (!Number(value)) {
+      dispatch({ type: "SET_BUILDS", payload: [] });
       dispatch({ type: "SET_BUILD", payload: 0 });
-      sessionStorage.removeItem("build");
-      sessionStorage.removeItem("tests");
-      sessionStorage.removeItem("summary");
-      sessionStorage.removeItem("runAll");
-      sessionStorage.removeItem("test");
-      sessionStorage.removeItem("env");
-      return;
-    }
-    dispatch({ type: "SET_SPINNER", payload: { visible: true, message: `Loading Build #${value} result...` } });
-    dispatch({ type: "SET_BUILD", payload: Number(value) });
-    sessionStorage.setItem("build", String(Number(value)));
-    const res = await getTests(user, state.project, Number(value));
-    dispatch({ type: "SET_SUMMARY", payload: res.data.summary });
-    sessionStorage.setItem("summary", JSON.stringify(res.data.summary));
-    if (res.status !== 200) {
-      dispatch({ type: "SET_MESSAGE", payload: { color: "red", text: res.error } });
-    } else if (res.data.summary.failed === 0) {
-      dispatch({ type: "SET_MESSAGE", payload: { color: "red", text: "No failed tests extracted for the selected build." } });
-      dispatch({ type: "SET_RUN_ALL", payload: false });
-    } else {
-      dispatch({ type: "SET_MESSAGE", payload: { color: "", text: "" } });
-      dispatch({ type: "SET_TESTS", payload: res.data.failedTests });
-      sessionStorage.setItem("tests", JSON.stringify(res.data.failedTests));
-    }
-    dispatch({ type: "SET_SPINNER", payload: { visible: false, message: "" } });
-  };
 
-  const handleRunAllChange = () => {
+      if (!value) {
+        dispatch({ type: "SET_PROJECT", payload: "" });
+        clearSessionStorage(SESSION_KEYS);
+        return;
+      }
+
+      dispatch({ type: "SET_PROJECT", payload: value });
+      sessionStorage.setItem("project", value);
+    },
+    [dispatch],
+  );
+
+  const handleRangeChange = useCallback(
+    async (value: string) => {
+      resetCommonState(dispatch);
+      dispatch({ type: "SET_BUILDS", payload: [] });
+      dispatch({ type: "SET_BUILD", payload: 0 });
+
+      if (!value) {
+        dispatch({ type: "SET_RANGE", payload: "" });
+        clearSessionStorage(SESSION_KEYS.slice(1)); // Skip 'project'
+        return;
+      }
+
+      dispatch({ type: "SET_RANGE", payload: value });
+      sessionStorage.setItem("range", value);
+      dispatch({ type: "SET_SPINNER", payload: { visible: true, message: "Loading Builds..." } });
+
+      try {
+        const res = await getBuilds(user, state.project, value);
+        dispatch({ type: "SET_BUILDS", payload: res.data });
+        sessionStorage.setItem("builds", JSON.stringify(res.data));
+
+        if (res.data.length === 0) {
+          dispatch({ type: "SET_MESSAGE", payload: { color: "red", text: "No builds found for the selected range." } });
+          dispatch({ type: "SET_RUN_ALL", payload: true });
+        }
+      } catch (error) {
+        dispatch({ type: "SET_MESSAGE", payload: { color: "red", text: "Failed to load builds." } });
+      } finally {
+        dispatch({ type: "SET_SPINNER", payload: { visible: false, message: "" } });
+      }
+    },
+    [dispatch, user, state.project],
+  );
+
+  const handleBuildChange = useCallback(
+    async (value: string) => {
+      resetCommonState(dispatch);
+
+      const buildId = Number(value);
+      if (!buildId) {
+        dispatch({ type: "SET_BUILD", payload: 0 });
+        clearSessionStorage(["build", "tests", "summary", "runAll", "test", "env"]);
+        return;
+      }
+
+      dispatch({ type: "SET_BUILD", payload: buildId });
+      sessionStorage.setItem("build", String(buildId));
+      dispatch({ type: "SET_SPINNER", payload: { visible: true, message: `Loading Build #${buildId} result...` } });
+
+      try {
+        const res = await getTests(user, state.project, buildId);
+
+        if (res.status !== 200) {
+          dispatch({ type: "SET_MESSAGE", payload: { color: "red", text: res.error } });
+        } else {
+          dispatch({ type: "SET_SUMMARY", payload: res.data.summary });
+          sessionStorage.setItem("summary", JSON.stringify(res.data.summary));
+
+          if (res.data.summary.failed === 0) {
+            dispatch({ type: "SET_MESSAGE", payload: { color: "red", text: "No failed tests extracted for the selected build." } });
+          } else {
+            dispatch({ type: "SET_TESTS", payload: res.data.failedTests });
+            sessionStorage.setItem("tests", JSON.stringify(res.data.failedTests));
+          }
+        }
+      } catch (error) {
+        dispatch({ type: "SET_MESSAGE", payload: { color: "red", text: "Failed to load test results." } });
+      } finally {
+        dispatch({ type: "SET_SPINNER", payload: { visible: false, message: "" } });
+      }
+    },
+    [dispatch, user, state.project],
+  );
+
+  const handleRunAllChange = useCallback(() => {
     dispatch({ type: "SET_MESSAGE", payload: { color: "", text: "" } });
-    dispatch({ type: "SET_RUN_ALL", payload: !state.runAll });
-    sessionStorage.setItem("runAll", String(!state.runAll));
-    if (!state.runAll) {
+    const newRunAll = !state.runAll;
+    dispatch({ type: "SET_RUN_ALL", payload: newRunAll });
+    sessionStorage.setItem("runAll", String(newRunAll));
+
+    if (newRunAll) {
       dispatch({ type: "SET_TEST", payload: [] });
       dispatch({ type: "SET_ENV", payload: "qa" });
       sessionStorage.removeItem("test");
       sessionStorage.setItem("env", "qa");
     }
-  };
+  }, [dispatch, state.runAll]);
 
-  const handleTestChange = (value: number[]) => {
-    dispatch({ type: "SET_MESSAGE", payload: { color: "", text: "" } });
-    dispatch({ type: "SET_TEST", payload: value });
-    sessionStorage.setItem("test", JSON.stringify(value));
-  };
+  const handleTestChange = useCallback(
+    (value: number[]) => {
+      dispatch({ type: "SET_MESSAGE", payload: { color: "", text: "" } });
+      dispatch({ type: "SET_TEST", payload: value });
+      sessionStorage.setItem("test", JSON.stringify(value));
+    },
+    [dispatch],
+  );
 
-  const handleDownloadFailures = async () => {
-    dispatch({ type: "SET_SPINNER", payload: { visible: true, message: `Downloading failures...` } });
+  const handleDownloadFailures = useCallback(async () => {
+    dispatch({ type: "SET_SPINNER", payload: { visible: true, message: "Downloading failures..." } });
+
     try {
       const blob = await downloadFailures(state.build, state.tests);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `Failures_#${state.build}_${new Date().toISOString().replace(/[.Z]/g, "").replaceAll(/_/g, ":").replace("T", "_")}.xlsx`;
+      link.download = generateFileName(state.build);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      dispatch({ type: "SET_SPINNER", payload: { visible: false, message: "" } });
     } catch (error) {
-      dispatch({ type: "SET_SPINNER", payload: { visible: false, message: "" } });
       dispatch({ type: "SET_MESSAGE", payload: { color: "red", text: "❌ Failed to download file." } });
+    } finally {
+      dispatch({ type: "SET_SPINNER", payload: { visible: false, message: "" } });
     }
-  };
+  }, [dispatch, state.build, state.tests]);
 
-  const buttonLabel = `${state.runAll ? "All" : state.test.length > 0 ? `Selected (${state.test.length})` : "All"}`;
+  const handleEnvChange = useCallback(
+    (value: string) => {
+      dispatch({ type: "SET_ENV", payload: value });
+      sessionStorage.setItem("env", value);
+    },
+    [dispatch],
+  );
+
+  const buttonLabel = useMemo(() => (state.runAll ? "All" : state.test.length > 0 ? `Selected (${state.test.length})` : "All"), [state.runAll, state.test.length]);
+
+  const isRunDisabled = useMemo(() => (!state.runAll && state.test.length === 0) || state.tests.length === 0 || state.builds.length === 0, [state.runAll, state.test.length, state.tests.length, state.builds.length]);
+
+  const selectedBuild = useMemo(() => state.builds.find((b: any) => b.buildId === state.build), [state.builds, state.build]);
 
   return (
     <div className="filter" style={{ filter: state.spinner.visible ? "blur(5px)" : "none" }}>
@@ -225,7 +281,8 @@ export default function Filter({ state, dispatch, handleRerun }: { state: any; d
       )}
 
       {/* Failed Tests */}
-      {!state.project ||
+      {state.spinner.visible ||
+        !state.project ||
         !state.range ||
         !state.build ||
         (!state.runAll && (
@@ -320,67 +377,35 @@ export default function Filter({ state, dispatch, handleRerun }: { state: any; d
         ))}
 
       {/* Environment selector */}
-      {state.build > 0 && (
-        <div>
-          <span className="filter-field">Environment</span>
-          <select
-            style={{ width: "70%" }}
-            value={state.env}
-            disabled={(!state.runAll && state.test.length === 0) || state.tests.length === 0 || state.builds.length === 0}
-            onChange={(e) => {
-              dispatch({ type: "SET_ENV", payload: e.target.value });
-              sessionStorage.setItem("env", e.target.value);
-            }}
-          >
-            {ENVIRONMENTS.map((env) => (
-              <option key={env.value} value={env.value}>
-                {env.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+      {state.spinner.visible ||
+        (state.build > 0 && (
+          <div>
+            <span className="filter-field">Environment</span>
+            <select style={{ width: "70%" }} value={state.env} disabled={isRunDisabled} onChange={(e) => handleEnvChange(e.target.value)}>
+              {ENVIRONMENTS.map((env) => (
+                <option key={env.value} value={env.value}>
+                  {env.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        ))}
 
       {/* Rerun button */}
-      {state.build ? (
-        <div style={{ width: "100%", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-          <button className="medium-button" style={{ width: "auto" }} onClick={() => handleDownloadFailures()}>
-            {`Download ${buttonLabel}`}
-          </button>
-          <button
-            className="medium-button"
-            style={{ width: "auto" }}
-            disabled={(!state.runAll && state.test.length === 0) || state.tests.length === 0 || state.builds.length === 0}
-            onClick={() =>
-              handleRerun(
-                -1,
-                state.builds.find((b: any) => b.buildId === state.build),
-                state.env,
-                "rerun",
-              )
-            }
-          >
-            {`Run ${buttonLabel}`}
-          </button>
-          <button
-            className="medium-button"
-            style={{ width: "auto" }}
-            disabled={(!state.runAll && state.test.length === 0) || state.tests.length === 0 || state.builds.length === 0}
-            onClick={() =>
-              handleRerun(
-                -1,
-                state.builds.find((b: any) => b.buildId === state.build),
-                state.env,
-                "debug",
-              )
-            }
-          >
-            {`Debug ${buttonLabel}`}
-          </button>
-        </div>
-      ) : (
-        ""
-      )}
+      {state.spinner.visible ||
+        (state.build > 0 && (
+          <div style={{ width: "100%", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+            <button className="medium-button" style={{ width: "auto" }} onClick={handleDownloadFailures}>
+              {`Download ${buttonLabel}`}
+            </button>
+            <button className="medium-button" style={{ width: "auto" }} disabled={isRunDisabled} onClick={() => handleRerun(-1, selectedBuild, state.env, "rerun")}>
+              {`Run ${buttonLabel}`}
+            </button>
+            <button className="medium-button" style={{ width: "auto" }} disabled={isRunDisabled} onClick={() => handleRerun(-1, selectedBuild, state.env, "debug")}>
+              {`Debug ${buttonLabel}`}
+            </button>
+          </div>
+        ))}
 
       <div style={{ color: state.message.color }}>{state.message.text}</div>
 

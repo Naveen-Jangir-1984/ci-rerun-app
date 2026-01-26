@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { downloadResults } from "../api";
 import { useAuth } from "../context/AuthContext";
 import AnsiToHtml from "ansi-to-html";
@@ -10,118 +10,149 @@ interface ResultsProps {
   handleRerun: (runId: number, build: any, env: string, mode: string) => void;
 }
 
+// Constants
+const ANSI_CONVERTER = new AnsiToHtml({
+  fg: "#FFF",
+  bg: "#FFF",
+  newline: true,
+  escapeXML: true,
+});
+
+// Helper functions
+const removeSearchSeparators = (text: string): string => {
+  return text.toLowerCase().replace(/[-\/]/g, "");
+};
+
+const generateFileName = (): string => {
+  return `Reruns_${new Date().toISOString().replace(/[.Z]/g, "").replaceAll(/_/g, ":").replace("T", "_")}.xlsx`;
+};
+
+const matchesSearchQuery = (result: any, query: string): boolean => {
+  const lowerQuery = query.toLowerCase();
+  const normalizedQuery = removeSearchSeparators(lowerQuery);
+
+  const searchFields = [result.test.featureName.toLowerCase(), result.test.scenarioName.toLowerCase(), result.test.example?.toLowerCase() || "", result.status.toLowerCase(), result.env.toLowerCase(), result.date.toLowerCase(), result.mode.toLowerCase(), `#${result.build.buildId}`];
+
+  const dateFields = [removeSearchSeparators(result.build.date), removeSearchSeparators(result.date)];
+
+  return searchFields.some((field) => field.includes(lowerQuery)) || dateFields.some((field) => field.includes(normalizedQuery));
+};
+
+// LogsViewer component
+const LogsViewer = ({ logs, cleanLogs }: { logs: string; cleanLogs: (logs: string) => string }) => {
+  const html = useMemo(() => ANSI_CONVERTER.toHtml(cleanLogs(logs)), [logs, cleanLogs]);
+
+  return (
+    <div
+      style={{
+        background: "#fff",
+        height: "55vh",
+        color: "#000",
+        padding: "2rem",
+        fontFamily: "monospace",
+        fontSize: "12px",
+        overflowY: "auto",
+        borderRadius: "10px",
+        marginTop: "10px",
+        boxSizing: "border-box",
+      }}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+};
+
 export default function Results({ state, dispatch, cleanPlaywrightLogs, handleRerun }: ResultsProps) {
   const { user, update } = useAuth();
   const [selectedResults, setSelectedResults] = useState<number[]>([]);
 
-  const ansiConverter = new AnsiToHtml({
-    fg: "#FFF",
-    bg: "#FFF",
-    newline: true,
-    escapeXML: true,
-  });
-
-  const LogsViewer = ({ logs }: { logs: string }) => {
-    const html = ansiConverter.toHtml(cleanPlaywrightLogs(logs));
-
-    return (
-      <div
-        style={{
-          background: "#fff",
-          height: "55vh",
-          color: "#000",
-          padding: "2rem",
-          fontFamily: "monospace",
-          fontSize: "12px",
-          overflowY: "auto",
-          borderRadius: "10px",
-          marginTop: "10px",
-          boxSizing: "border-box",
-        }}
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
-    );
-  };
-
-  const handleDownloadResults = async (selectedResults: number[]) => {
-    dispatch({ type: "SET_SPINNER", payload: { visible: true, message: `Downloading results...` } });
-    try {
-      let blob = null;
-      if (selectedResults.length === 0) {
-        blob = await downloadResults(state.result);
-      } else {
-        const resultsToDownload = state.result.filter((r: any) => selectedResults.includes(r.runId));
-        blob = await downloadResults(resultsToDownload);
-      }
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `Reruns_${new Date().toISOString().replace(/[.Z]/g, "").replaceAll(/_/g, ":").replace("T", "_")}.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      dispatch({ type: "SET_SPINNER", payload: { visible: false, message: "" } });
-    } catch (error) {
-      dispatch({ type: "SET_SPINNER", payload: { visible: false, message: "" } });
-      dispatch({ type: "SET_MESSAGE", payload: { color: "red", text: "❌ Failed to download file." } });
-    }
-  };
-
-  const handleDelete = (runId: number) => {
-    const consent = window.confirm("Are you sure you want to delete?");
-    if (!consent) return;
-    const updatedResult = user.results.filter((item: any) => item.runId !== runId);
-    dispatch({ type: "SET_RESULT", payload: updatedResult });
-    update({ result: updatedResult });
-  };
-
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value.toLowerCase();
-    if (!query) {
-      dispatch({ type: "SET_RESULT", payload: user.results });
-      update({ result: user.results.map((r: any) => ({ ...r, isOpen: false })) });
-      return;
-    }
-    const filteredResult = user.results.filter((r: any) => {
-      const searchableBuildDate = r.build.date.toLowerCase().replace(/[-\/]/g, ""); // Remove separators for more flexible searching
-      const searchableRunDate = r.date.toLowerCase().replace(/[-\/]/g, ""); // Remove separators for more flexible searching
-      return r.test.featureName.toLowerCase().includes(query) || r.test.scenarioName.toLowerCase().includes(query) || (r.test.example && r.test.example.toLowerCase().includes(query)) || r.status.toLowerCase().includes(query) || r.env.toLowerCase().includes(query) || r.date.toLowerCase().includes(query) || searchableBuildDate.includes(query.replace(/[-\/]/g, "")) || searchableRunDate.includes(query.replace(/[-\/]/g, "")) || String(`#${r.build}`).includes(query) || r.mode.toLowerCase().includes(query);
-    });
-    dispatch({ type: "SET_RESULT", payload: filteredResult.map((r: any) => ({ ...r, isOpen: false })) });
-    update({ result: user.results.map((r: any) => ({ ...r, isOpen: false })) });
-  };
-
-  const handleShowHideLog = (runId: number) => {
-    const updatedResult = state.result.map((item: any) => {
-      if (runId === item.runId) {
-        item.isOpen = !item.isOpen;
-      } else item.isOpen = false;
-      return item;
-    });
-    dispatch({ type: "SET_RESULT", payload: updatedResult });
-    update({ result: updatedResult });
-  };
-
-  const handleSelection = (runId: number, isChecked: boolean) => {
-    if (isChecked) {
-      setSelectedResults((prev) => [...prev, runId]);
-    } else {
-      setSelectedResults((prev) => prev.filter((id) => id !== runId));
-    }
-  };
-
-  const totalCount = user.results.length;
-  const searchedCount = state.result.length;
+  const totalCount = useMemo(() => user.results?.length || 0, [user.results]);
+  const searchedCount = useMemo(() => state.result?.length || 0, [state.result]);
   const selectedCount = selectedResults.length;
   const isSearchActive = searchedCount !== totalCount;
+
+  const handleDownloadResults = useCallback(
+    async (selectedIds: number[]) => {
+      dispatch({ type: "SET_SPINNER", payload: { visible: true, message: "Downloading results..." } });
+
+      try {
+        const resultsToDownload = selectedIds.length === 0 ? state.result : state.result.filter((r: any) => selectedIds.includes(r.runId));
+
+        const blob = await downloadResults(resultsToDownload);
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = generateFileName();
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        dispatch({ type: "SET_MESSAGE", payload: { color: "red", text: "❌ Failed to download file." } });
+      } finally {
+        dispatch({ type: "SET_SPINNER", payload: { visible: false, message: "" } });
+      }
+    },
+    [dispatch, state.result],
+  );
+
+  const handleDelete = useCallback(
+    (runId: number) => {
+      if (!window.confirm("Are you sure you want to delete?")) return;
+
+      const updatedResult = user.results.filter((item: any) => item.runId !== runId);
+      dispatch({ type: "SET_RESULT", payload: updatedResult });
+      update({ result: updatedResult });
+    },
+    [user.results, dispatch, update],
+  );
+
+  const handleSearch = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const query = e.target.value.trim();
+
+      if (!query) {
+        dispatch({ type: "SET_RESULT", payload: user.results });
+        update({ result: user.results.map((r: any) => ({ ...r, isOpen: false })) });
+        return;
+      }
+
+      const filteredResult = user.results.filter((r: any) => matchesSearchQuery(r, query)).map((r: any) => ({ ...r, isOpen: false }));
+
+      dispatch({ type: "SET_RESULT", payload: filteredResult });
+      update({ result: user.results.map((r: any) => ({ ...r, isOpen: false })) });
+    },
+    [user.results, dispatch, update],
+  );
+
+  const handleShowHideLog = useCallback(
+    (runId: number) => {
+      const updatedResult = state.result.map((item: any) => ({
+        ...item,
+        isOpen: item.runId === runId ? !item.isOpen : false,
+      }));
+
+      dispatch({ type: "SET_RESULT", payload: updatedResult });
+      update({ result: updatedResult });
+    },
+    [state.result, dispatch, update],
+  );
+
+  const handleSelection = useCallback((runId: number, isChecked: boolean) => {
+    setSelectedResults((prev) => (isChecked ? [...prev, runId] : prev.filter((id) => id !== runId)));
+  }, []);
+
+  const downloadButtonLabel = useMemo(() => {
+    if (selectedCount > 0) return `Download Selected (${selectedCount})`;
+    if (isSearchActive) return `Download Searched (${searchedCount})`;
+    return "Download All";
+  }, [selectedCount, isSearchActive, searchedCount]);
 
   return (
     <div style={{ display: "flex", width: "65%", height: "100%", flexDirection: "column", gap: "10px", filter: state.spinner?.visible ? "blur(5px)" : "none" }}>
       <div style={{ width: "100%", height: "30px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <input disabled={state.spinner?.visible || user.results.length === 0} style={{ fontSize: "12px", width: "80%", height: "100%" }} type="text" placeholder="search results..." onChange={handleSearch} />
         <button className="medium-button" style={{ width: "auto" }} disabled={state.spinner?.visible || state.result.length === 0} onClick={() => handleDownloadResults(selectedResults)}>
-          {selectedCount > 0 ? `Download Selected (${selectedCount})` : isSearchActive ? `Download Searched (${searchedCount})` : `Download All`}
+          {downloadButtonLabel}
         </button>
       </div>
       {state.result.length > 0 ? (
@@ -165,7 +196,7 @@ export default function Results({ state, dispatch, cleanPlaywrightLogs, handleRe
                     </div>
                   </div>
                 </div>
-                {r.isOpen && <LogsViewer logs={r.logs} />}
+                {r.isOpen && <LogsViewer logs={r.logs} cleanLogs={cleanPlaywrightLogs} />}
               </div>
             </div>
           ))}
