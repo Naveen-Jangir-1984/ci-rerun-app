@@ -1,31 +1,85 @@
-import React from "react";
+import { useState } from "react";
+import { downloadResults } from "../api";
 import { useAuth } from "../context/AuthContext";
+import AnsiToHtml from "ansi-to-html";
 
 interface ResultsProps {
-  result: any[];
-  spinner?: { visible: boolean; message: string };
-  setResult: (value: any[]) => void;
-  handleRerun: (id: number, build: any, env: string, mode: string) => Promise<void>;
-  handleDownloadResults: (selectedResults: number[]) => Promise<void>;
-  LogsViewer: React.FC<{ logs: string }>;
+  state: any;
+  dispatch: any;
+  cleanPlaywrightLogs: (logs: string) => string;
+  handleRerun: (runId: number, build: any, env: string, mode: string) => void;
 }
 
-export default function Results({ result, spinner, setResult, handleRerun, handleDownloadResults, LogsViewer }: ResultsProps) {
+export default function Results({ state, dispatch, cleanPlaywrightLogs, handleRerun }: ResultsProps) {
   const { user, update } = useAuth();
-  const [selectedResults, setSelectedResults] = React.useState<number[]>([]);
+  const [selectedResults, setSelectedResults] = useState<number[]>([]);
 
-  function handleDelete(runId: number) {
+  const ansiConverter = new AnsiToHtml({
+    fg: "#FFF",
+    bg: "#FFF",
+    newline: true,
+    escapeXML: true,
+  });
+
+  const LogsViewer = ({ logs }: { logs: string }) => {
+    const html = ansiConverter.toHtml(cleanPlaywrightLogs(logs));
+
+    return (
+      <div
+        style={{
+          background: "#fff",
+          height: "55vh",
+          color: "#000",
+          padding: "2rem",
+          fontFamily: "monospace",
+          fontSize: "12px",
+          overflowY: "auto",
+          borderRadius: "10px",
+          marginTop: "10px",
+          boxSizing: "border-box",
+        }}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    );
+  };
+
+  const handleDownloadResults = async (selectedResults: number[]) => {
+    dispatch({ type: "SET_SPINNER", payload: { visible: true, message: `Downloading results...` } });
+    try {
+      let blob = null;
+      if (selectedResults.length === 0) {
+        blob = await downloadResults(state.result);
+      } else {
+        const resultsToDownload = state.result.filter((r: any) => selectedResults.includes(r.runId));
+        blob = await downloadResults(resultsToDownload);
+      }
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Reruns_${new Date().toISOString().replace(/[.Z]/g, "").replaceAll(/_/g, ":").replace("T", "_")}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      dispatch({ type: "SET_SPINNER", payload: { visible: false, message: "" } });
+    } catch (error) {
+      dispatch({ type: "SET_SPINNER", payload: { visible: false, message: "" } });
+      dispatch({ type: "SET_MESSAGE", payload: { color: "red", text: "❌ Failed to download file." } });
+    }
+  };
+
+  const handleDelete = (runId: number) => {
     const consent = window.confirm("Are you sure you want to delete?");
     if (!consent) return;
     const updatedResult = user.results.filter((item: any) => item.runId !== runId);
-    setResult(updatedResult);
+    dispatch({ type: "SET_RESULT", payload: updatedResult });
     update({ result: updatedResult });
-  }
+  };
 
-  function handleSearch(e: React.ChangeEvent<HTMLInputElement>) {
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase();
     if (!query) {
-      setResult(user.results);
+      dispatch({ type: "SET_RESULT", payload: user.results });
       update({ result: user.results.map((r: any) => ({ ...r, isOpen: false })) });
       return;
     }
@@ -34,45 +88,45 @@ export default function Results({ result, spinner, setResult, handleRerun, handl
       const searchableRunDate = r.date.toLowerCase().replace(/[-\/]/g, ""); // Remove separators for more flexible searching
       return r.test.featureName.toLowerCase().includes(query) || r.test.scenarioName.toLowerCase().includes(query) || (r.test.example && r.test.example.toLowerCase().includes(query)) || r.status.toLowerCase().includes(query) || r.env.toLowerCase().includes(query) || r.date.toLowerCase().includes(query) || searchableBuildDate.includes(query.replace(/[-\/]/g, "")) || searchableRunDate.includes(query.replace(/[-\/]/g, "")) || String(`#${r.build}`).includes(query) || r.mode.toLowerCase().includes(query);
     });
-    setResult(filteredResult.map((r: any) => ({ ...r, isOpen: false })));
+    dispatch({ type: "SET_RESULT", payload: filteredResult.map((r: any) => ({ ...r, isOpen: false })) });
     update({ result: user.results.map((r: any) => ({ ...r, isOpen: false })) });
-  }
+  };
 
-  function handleShowHideLog(runId: number) {
-    const updatedResult = result.map((item) => {
+  const handleShowHideLog = (runId: number) => {
+    const updatedResult = state.result.map((item: any) => {
       if (runId === item.runId) {
         item.isOpen = !item.isOpen;
       } else item.isOpen = false;
       return item;
     });
-    setResult(updatedResult);
+    dispatch({ type: "SET_RESULT", payload: updatedResult });
     update({ result: updatedResult });
-  }
+  };
 
-  function handleSelection(runId: number, isChecked: boolean) {
+  const handleSelection = (runId: number, isChecked: boolean) => {
     if (isChecked) {
       setSelectedResults((prev) => [...prev, runId]);
     } else {
       setSelectedResults((prev) => prev.filter((id) => id !== runId));
     }
-  }
+  };
 
   const totalCount = user.results.length;
-  const searchedCount = result.length;
+  const searchedCount = state.result.length;
   const selectedCount = selectedResults.length;
   const isSearchActive = searchedCount !== totalCount;
 
   return (
-    <div style={{ display: "flex", width: "65%", height: "100%", flexDirection: "column", gap: "10px", filter: spinner?.visible ? "blur(5px)" : "none" }}>
+    <div style={{ display: "flex", width: "65%", height: "100%", flexDirection: "column", gap: "10px", filter: state.spinner?.visible ? "blur(5px)" : "none" }}>
       <div style={{ width: "100%", height: "30px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <input disabled={spinner?.visible || user.results.length === 0} style={{ fontSize: "12px", width: "80%", height: "100%" }} type="text" placeholder="search results..." onChange={handleSearch} />
-        <button className="medium-button" style={{ width: "auto" }} disabled={spinner?.visible || result.length === 0} onClick={() => handleDownloadResults(selectedResults)}>
+        <input disabled={state.spinner?.visible || user.results.length === 0} style={{ fontSize: "12px", width: "80%", height: "100%" }} type="text" placeholder="search results..." onChange={handleSearch} />
+        <button className="medium-button" style={{ width: "auto" }} disabled={state.spinner?.visible || state.result.length === 0} onClick={() => handleDownloadResults(selectedResults)}>
           {selectedCount > 0 ? `Download Selected (${selectedCount})` : isSearchActive ? `Download Searched (${searchedCount})` : `Download All`}
         </button>
       </div>
-      {result.length > 0 ? (
+      {state.result.length > 0 ? (
         <div className="results">
-          {result.map((r, idx) => (
+          {state.result.map((r: any, idx: number) => (
             <div key={idx} className="card">
               <label htmlFor={`reran-${r.runId}`} style={{ height: "100%", padding: "0 10px", display: "flex", justifyContent: "center", alignItems: "center", borderRadius: "5px" }}>
                 <input id={`reran-${r.runId}`} type="checkbox" checked={selectedResults.includes(r.runId)} onChange={() => handleSelection(r.runId, !selectedResults.includes(r.runId))} />
@@ -117,7 +171,7 @@ export default function Results({ result, spinner, setResult, handleRerun, handl
           ))}
         </div>
       ) : (
-        <div className="results empty" style={{ filter: spinner?.visible ? "blur(5px)" : "none" }}>
+        <div className="results empty" style={{ filter: state.spinner?.visible ? "blur(5px)" : "none" }}>
           <span style={{ fontStyle: "italic" }}>No results to display.</span>
         </div>
       )}

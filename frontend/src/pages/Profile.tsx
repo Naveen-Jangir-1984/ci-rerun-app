@@ -40,11 +40,11 @@ export default function Profile() {
     });
   }, []);
 
-  function cancel() {
+  const cancel = () => {
     window.history.back();
-  }
+  };
 
-  async function save() {
+  const save = async () => {
     const res = await update({
       firstName: state.firstName,
       lastName: state.lastName,
@@ -57,7 +57,7 @@ export default function Profile() {
     } else {
       dispatch({ type: "SET_MESSAGE", payload: res.error });
     }
-  }
+  };
 
   return (
     <div className="profile">

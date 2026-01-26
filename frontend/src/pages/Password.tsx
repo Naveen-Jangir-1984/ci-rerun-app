@@ -22,11 +22,11 @@ export default function Password() {
 
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  function cancel() {
+  const cancel = () => {
     window.history.back();
-  }
+  };
 
-  async function save() {
+  const save = async () => {
     if (state.password.password !== state.password.confirm) {
       dispatch({ type: "SET_MESSAGE", payload: "New and Confirm Passwords do not match" });
       return;
@@ -42,7 +42,7 @@ export default function Password() {
     } else {
       dispatch({ type: "SET_MESSAGE", payload: res.error });
     }
-  }
+  };
 
   const isUpdateDisabled = !state.password.current || !state.password.password || !state.password.confirm;
 

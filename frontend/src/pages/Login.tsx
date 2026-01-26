@@ -44,17 +44,17 @@ export default function SignIn() {
     getUsersByTeam(state.form.team).then((users) => dispatch({ type: "SET_USERS", payload: users }));
   }, [state.form.team]);
 
-  async function submit() {
+  const submit = async () => {
     const res = await login(state.form.team, state.form.username, state.form.password);
     if (res.status === 401) dispatch({ type: "SET_MESSAGE", payload: res.error });
     else nav("/dashboard");
-  }
+  };
 
-  function reset() {
+  const reset = () => {
     dispatch({ type: "SET_FORM", payload: { team: "", username: "", password: "" } });
     dispatch({ type: "SET_USERS", payload: [] });
     dispatch({ type: "SET_MESSAGE", payload: "" });
-  }
+  };
 
   const isSubmitDisabled = !state.form.team || !state.form.username || !state.form.password;
   const isResetDisabled = !state.form.team && !state.form.username && !state.form.password;

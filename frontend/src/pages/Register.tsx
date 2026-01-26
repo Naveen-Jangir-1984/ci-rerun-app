@@ -5,7 +5,7 @@ import { getTeams } from "../api";
 export default function Register() {
   const { register } = useAuth();
 
-  const initalState = {
+  const initialState = {
     teams: [],
     form: { team: "", username: "", firstName: "", lastName: "", password: "", confirm: "" },
     message: { color: "", text: "" },
@@ -24,13 +24,13 @@ export default function Register() {
     }
   };
 
-  const [state, dispatch] = useReducer(reducer, initalState);
+  const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
     getTeams().then((teams) => dispatch({ type: "SET_TEAMS", payload: teams }));
   }, []);
 
-  function reset() {
+  const reset = () => {
     dispatch({
       type: "SET_FORM",
       payload: {
@@ -43,9 +43,9 @@ export default function Register() {
       },
     });
     dispatch({ type: "SET_MESSAGE", payload: { color: "", text: "" } });
-  }
+  };
 
-  async function submit() {
+  const submit = async () => {
     if (state.form.password !== state.form.confirm) {
       dispatch({ type: "SET_MESSAGE", payload: { color: "red", text: "Password and Confirm Passwords do not match" } });
       return;
@@ -73,7 +73,7 @@ export default function Register() {
         },
       });
     }
-  }
+  };
 
   const isResetDisabled = !state.form.team && !state.form.username && !state.form.firstName && !state.form.lastName && !state.form.password && !state.form.confirm;
   const isSubmitDisabled = !state.form.team || !state.form.username || !state.form.firstName || !state.form.lastName || !state.form.password || !state.form.confirm;
