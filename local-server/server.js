@@ -206,6 +206,7 @@ app.get("/health", (_, res) => {
 
 app.post("/getTests", async (req, res) => {
   const { user, projectId, buildId } = req.body;
+  const artifactFolderName = "junit-report";
   const artifactFileName = "junit.xml";
 
   const base = `https://dev.azure.com/${process.env.AZURE_ORG}/${projectId}`;
@@ -226,11 +227,11 @@ app.post("/getTests", async (req, res) => {
     // 🔥 Take the FIRST artifact (since only one exists)
     const artifact = artifactsRes.data.value[0];
 
-    if (!artifact) {
-      return res.status(404).json({
+    if (!artifact || artifact.name !== artifactFolderName) {
+      return res.json({
         status: 404,
         data: [],
-        error: "No artifacts found for this build",
+        error: `${artifactFolderName}/${artifactFileName} artifact NOT FOUND for this build`,
       });
     }
 
@@ -257,7 +258,7 @@ app.post("/getTests", async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Error in /getTests:", error.message);
-    res.status(500).json({
+    res.json({
       status: 500,
       data: [],
       error: error.message,

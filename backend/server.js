@@ -290,7 +290,7 @@ app.post("/builds", async (req, res) => {
 
     res.json({ status: 200, data: enriched });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.json({ status: 500, error: e.message });
   }
 });
 

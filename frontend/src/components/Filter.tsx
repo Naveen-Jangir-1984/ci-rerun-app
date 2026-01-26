@@ -252,16 +252,18 @@ export default function Filter({ state, dispatch, handleRerun }: FilterProps) {
         <span className="filter-field">(#Build) Pipeline</span>
         <select style={{ width: "70%" }} value={state.build} disabled={state.builds.length === 0} onChange={(e) => handleBuildChange(e.target.value)}>
           <option value={0}>-- select --</option>
-          {state.builds.map((b: any) => (
-            <option key={b.buildId} style={{ display: b.status === "completed" && b.result === "succeeded" ? "none" : "block" }} value={b.buildId}>
-              (#{b.buildId}) {b.pipelineName}
-            </option>
-          ))}
+          {state.builds
+            .sort((a: any, b: any) => b.buildId - a.buildId)
+            .map((b: any) => (
+              <option key={b.buildId} style={{ display: b.status === "completed" && b.result === "succeeded" ? "none" : "block" }} value={b.buildId}>
+                (#{b.buildId}) {b.pipelineName}
+              </option>
+            ))}
         </select>
       </div>
 
       {/* Summary and Run All Failed */}
-      {state.build > 0 && state.tests.length > 0 ? (
+      {!state.spinner.visible && state.build > 0 && state.tests.length > 0 ? (
         <div>
           <span className="filter-field">Result</span>
           <div className="filter-result">
@@ -274,111 +276,107 @@ export default function Filter({ state, dispatch, handleRerun }: FilterProps) {
             </label>
           </div>
         </div>
-      ) : state.project && state.range && state.build && !state.spinner.visible ? (
-        <div style={{ color: "red" }}>Either there is no artifact found or there were no failures.</div>
       ) : (
         ""
       )}
 
       {/* Failed Tests */}
-      {state.spinner.visible ||
-        !state.project ||
-        !state.range ||
-        !state.build ||
-        (!state.runAll && (
-          <div>
-            <span className="filter-field">Failed Test</span>
-            <div style={{ width: "70%", position: "relative" }}>
-              <div
-                style={{
-                  border: "1px solid #ccc",
-                  borderRadius: "5px",
-                  padding: "0.5rem 0.75rem",
-                  backgroundColor: state.tests.length === 0 ? "#e9ecef" : "#fff",
-                  cursor: state.tests.length === 0 ? "not-allowed" : "pointer",
-                }}
-                onClick={(e) => {
-                  if (state.tests.length > 0) {
-                    const dropdown = e.currentTarget.nextElementSibling as HTMLElement;
-                    dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
-                  }
-                }}
-              >
-                {state.test.length === 0 ? "-- select --" : `${state.tests.filter((t: any) => (Array.isArray(state.test) ? state.test.includes(t.id) : false)).length} selected`}
-              </div>
-              <div
-                style={{
-                  display: "none",
-                  position: "absolute",
-                  top: "100%",
-                  left: 0,
-                  right: 0,
-                  backgroundColor: "#fff",
-                  border: "1px solid #ccc",
-                  borderRadius: "5px",
-                  maxHeight: "300px",
-                  overflowY: "auto",
-                  zIndex: 1000,
-                  marginTop: "1px",
-                  boxSizing: "border-box",
-                }}
-                ref={(dropdown) => {
-                  if (dropdown) {
-                    const handleClickOutside = (e: MouseEvent) => {
-                      if (!dropdown.parentElement?.contains(e.target as Node)) {
-                        dropdown.style.display = "none";
-                      }
-                    };
-
-                    if (dropdown.style.display === "block") {
-                      document.addEventListener("click", handleClickOutside);
+      {!state.spinner.visible && state.project && state.range && state.build && state.tests.length > 0 && !state.runAll ? (
+        <div>
+          <span className="filter-field">Failed Test</span>
+          <div style={{ width: "70%", position: "relative" }}>
+            <div
+              style={{
+                border: "1px solid #ccc",
+                borderRadius: "5px",
+                padding: "0.5rem 0.75rem",
+                backgroundColor: state.tests.length === 0 ? "#e9ecef" : "#fff",
+                cursor: state.tests.length === 0 ? "not-allowed" : "pointer",
+              }}
+              onClick={(e) => {
+                if (state.tests.length > 0) {
+                  const dropdown = e.currentTarget.nextElementSibling as HTMLElement;
+                  dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+                }
+              }}
+            >
+              {state.test.length === 0 ? "-- select --" : `${state.tests.filter((t: any) => (Array.isArray(state.test) ? state.test.includes(t.id) : false)).length} selected`}
+            </div>
+            <div
+              style={{
+                display: "none",
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                right: 0,
+                backgroundColor: "#fff",
+                border: "1px solid #ccc",
+                borderRadius: "5px",
+                maxHeight: "300px",
+                overflowY: "auto",
+                zIndex: 1000,
+                marginTop: "1px",
+                boxSizing: "border-box",
+              }}
+              ref={(dropdown) => {
+                if (dropdown) {
+                  const handleClickOutside = (e: MouseEvent) => {
+                    if (!dropdown.parentElement?.contains(e.target as Node)) {
+                      dropdown.style.display = "none";
                     }
+                  };
 
-                    return () => document.removeEventListener("click", handleClickOutside);
+                  if (dropdown.style.display === "block") {
+                    document.addEventListener("click", handleClickOutside);
                   }
-                }}
-              >
-                {state.tests.map((testItem: any) => (
-                  <label
-                    key={testItem.id}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      padding: "0.5rem 0.75rem",
-                      cursor: "pointer",
-                      borderBottom: "1px solid #f0f0f0",
+
+                  return () => document.removeEventListener("click", handleClickOutside);
+                }
+              }}
+            >
+              {state.tests.map((testItem: any) => (
+                <label
+                  key={testItem.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "0.5rem 0.75rem",
+                    cursor: "pointer",
+                    borderBottom: "1px solid #f0f0f0",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f0f0f0")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <input
+                    type="checkbox"
+                    checked={Array.isArray(state.test) ? state.test.includes(testItem.id) : false}
+                    onChange={(e) => {
+                      const currentTests = Array.isArray(state.test) ? state.test : [];
+                      if (e.target.checked) {
+                        handleTestChange([...currentTests, testItem.id] as any);
+                      } else {
+                        handleTestChange(currentTests.filter((id: number) => id !== testItem.id) as any);
+                      }
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f0f0f0")}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={Array.isArray(state.test) ? state.test.includes(testItem.id) : false}
-                      onChange={(e) => {
-                        const currentTests = Array.isArray(state.test) ? state.test : [];
-                        if (e.target.checked) {
-                          handleTestChange([...currentTests, testItem.id] as any);
-                        } else {
-                          handleTestChange(currentTests.filter((id: number) => id !== testItem.id) as any);
-                        }
-                      }}
-                      style={{ marginRight: "10px" }}
-                    />
-                    <span style={{ fontSize: "12px", lineHeight: "1.5" }}>
-                      <span>{`${testItem.featureName} →`}</span>
-                      <span style={{ marginLeft: "5px", color: "#777", fontStyle: "italic" }}>{testItem.scenarioName}</span> {testItem.example ? <span style={{ marginLeft: "5px", backgroundColor: "#ddd", color: "#555", padding: "3px 7px", borderRadius: "5px", fontSize: "11px" }}>{testItem.example}</span> : ""}
-                    </span>
-                  </label>
-                ))}
-              </div>
+                    style={{ marginRight: "10px" }}
+                  />
+                  <span style={{ fontSize: "12px", lineHeight: "1.5" }}>
+                    <span>{`${testItem.featureName} →`}</span>
+                    <span style={{ marginLeft: "5px", color: "#777", fontStyle: "italic" }}>{testItem.scenarioName}</span> {testItem.example ? <span style={{ marginLeft: "5px", backgroundColor: "#ddd", color: "#555", padding: "3px 7px", borderRadius: "5px", fontSize: "11px" }}>{testItem.example}</span> : ""}
+                  </span>
+                </label>
+              ))}
             </div>
           </div>
-        ))}
+        </div>
+      ) : (
+        ""
+      )}
 
-      {/* Environment selector */}
-      {state.spinner.visible ||
-        (state.build > 0 && (
+      {!state.spinner.visible && state.project && state.range && state.build && state.tests.length > 0 ? (
+        <>
+          {/* Environment selector */}
           <div>
             <span className="filter-field">Environment</span>
             <select style={{ width: "70%" }} value={state.env} disabled={isRunDisabled} onChange={(e) => handleEnvChange(e.target.value)}>
@@ -389,11 +387,7 @@ export default function Filter({ state, dispatch, handleRerun }: FilterProps) {
               ))}
             </select>
           </div>
-        ))}
-
-      {/* Rerun button */}
-      {state.spinner.visible ||
-        (state.build > 0 && (
+          {/* Rerun button */}
           <div style={{ width: "100%", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
             <button className="medium-button" style={{ width: "auto" }} onClick={handleDownloadFailures}>
               {`Download ${buttonLabel}`}
@@ -405,7 +399,10 @@ export default function Filter({ state, dispatch, handleRerun }: FilterProps) {
               {`Debug ${buttonLabel}`}
             </button>
           </div>
-        ))}
+        </>
+      ) : (
+        ""
+      )}
 
       <div style={{ color: state.message.color }}>{state.message.text}</div>
 
