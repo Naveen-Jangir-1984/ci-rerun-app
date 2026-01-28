@@ -7,7 +7,7 @@
   padding: 10px;
   gap: 10px;
   box-sizing: border-box;
-  background-color: #f5f5f5;
+  background-color: #fff;
   overflow-y: auto;
 }
 
@@ -40,7 +40,6 @@
   width: 98vw;
   height: 95vh;
   display: flex;
-  flex-direction: row;
   justify-content: space-between;
   align-items: flex-start;
   gap: 20px;
@@ -55,7 +54,7 @@
 }
 
 .header .user-name {
-  background-color: #eee;
+  background-color: whitesmoke;
   padding: 0.5rem 1rem;
   border: 1px solid #ccc;
   font-size: small;
@@ -107,7 +106,7 @@
 .filter .filter-field {
   font-size: small;
   width: 20%;
-  background-color: #eee;
+  background-color: whitesmoke;
   padding: 0.5rem 1rem;
   border: 1px solid #ccc;
   border-radius: 7px;
@@ -164,24 +163,24 @@
   overflow: auto;
 }
 .results label {
-  background-color: #eee;
+  background-color: whitesmoke;
 }
 .results label:hover {
-  background-color: #ddd;
+  background-color: #eee;
 }
 
 .result {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  background-color: #eee;
+  background-color: whitesmoke;
   border-radius: 7px;
   padding: 10px;
   width: 100%;
   box-sizing: border-box;
 }
 .result:hover {
-  background-color: #ddd;
+  background-color: #eee;
 }
 
 .empty {
@@ -249,6 +248,14 @@
   border-radius: 15px;
   background-color: rgba(255, 255, 255, 0.7);
   box-shadow: 0 2px 20px lightgrey;
+}
+
+.copyright {
+  position: fixed;
+  bottom: 5px;
+  right: 10px;
+  font-size: 12px;
+  color: #aaa;
 }
 
 .spinner {

@@ -156,6 +156,7 @@ export default function App() {
           </BrowserRouter>
         </AuthProvider>
       )}
+      <div className="copyright">Developed by Your Name</div>
     </div>
   );
 }

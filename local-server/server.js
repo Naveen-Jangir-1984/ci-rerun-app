@@ -20,6 +20,154 @@ app.use(express.json({ limit: "1gb" }));
 app.use(express.urlencoded({ limit: "1gb", extended: true }));
 const config = JSON.parse(fs.readFileSync("./config.json", "utf8"));
 
+/* ---------------- Configuration ---------- */
+const CONFIG = {
+  AZURE_TIMEOUT: 120000, // 120 seconds (artifact downloads can be large)
+  MAX_RETRIES: 3,
+  RETRY_DELAY: 1000, // Start with 1 second
+  CACHE_TTL: 5 * 60 * 1000, // 5 minutes
+  MAX_CONCURRENT_REQUESTS: 5,
+  RATE_LIMIT_WINDOW: 60000, // 1 minute
+  RATE_LIMIT_MAX_REQUESTS: 30,
+};
+
+/* ---------------- Cache & Rate Limiting -- */
+const cache = new Map();
+const requestQueue = [];
+let activeRequests = 0;
+const rateLimitMap = new Map();
+
+// Axios instance with timeout and keep-alive
+const axiosInstance = axios.create({
+  timeout: CONFIG.AZURE_TIMEOUT,
+  headers: {
+    Connection: "keep-alive",
+  },
+  maxRedirects: 5,
+});
+
+/* ---------------- Helpers ---------------- */
+// Sleep helper for retry delay
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Cache helper
+const getCacheKey = (url, params = {}) => {
+  return `${url}:${JSON.stringify(params)}`;
+};
+
+const getFromCache = (key) => {
+  const cached = cache.get(key);
+  if (!cached) return null;
+
+  const { data, timestamp } = cached;
+  if (Date.now() - timestamp > CONFIG.CACHE_TTL) {
+    cache.delete(key);
+    return null;
+  }
+
+  return data;
+};
+
+const setCache = (key, data) => {
+  cache.set(key, { data, timestamp: Date.now() });
+
+  // Cleanup old cache entries (keep max 50 items)
+  if (cache.size > 50) {
+    const firstKey = cache.keys().next().value;
+    cache.delete(firstKey);
+  }
+};
+
+// Rate limiting helper
+const checkRateLimit = (userId) => {
+  const now = Date.now();
+  const userRequests = rateLimitMap.get(userId) || [];
+
+  // Remove old requests outside the window
+  const recentRequests = userRequests.filter((timestamp) => now - timestamp < CONFIG.RATE_LIMIT_WINDOW);
+
+  if (recentRequests.length >= CONFIG.RATE_LIMIT_MAX_REQUESTS) {
+    return false;
+  }
+
+  recentRequests.push(now);
+  rateLimitMap.set(userId, recentRequests);
+  return true;
+};
+
+// Retry helper with exponential backoff
+const retryWithBackoff = async (fn, retries = CONFIG.MAX_RETRIES) => {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      const isLastAttempt = attempt === retries;
+      const isRetryable = error.code === "ECONNABORTED" || error.code === "ETIMEDOUT" || error.code === "ENOTFOUND" || (error.response && error.response.status >= 500) || (error.response && error.response.status === 429);
+
+      if (isLastAttempt || !isRetryable) {
+        throw error;
+      }
+
+      // Exponential backoff: 1s, 2s, 4s
+      const delay = CONFIG.RETRY_DELAY * Math.pow(2, attempt);
+      console.log(`⚠️ Retry attempt ${attempt + 1}/${retries} after ${delay}ms - ${error.message}`);
+      await sleep(delay);
+    }
+  }
+};
+
+// Request queue manager
+const executeWithQueue = async (fn) => {
+  if (activeRequests >= CONFIG.MAX_CONCURRENT_REQUESTS) {
+    // Queue the request
+    await new Promise((resolve) => {
+      requestQueue.push(resolve);
+    });
+  }
+
+  activeRequests++;
+
+  try {
+    return await fn();
+  } finally {
+    activeRequests--;
+
+    // Process next queued request
+    if (requestQueue.length > 0) {
+      const next = requestQueue.shift();
+      next();
+    }
+  }
+};
+
+// Azure API call wrapper with retry, caching, and queuing
+const azureApiCall = async (url, options = {}, cacheKey = null) => {
+  // Check cache first
+  if (cacheKey) {
+    const cached = getFromCache(cacheKey);
+    if (cached) {
+      console.log(`✓ Cache hit: ${cacheKey.substring(0, 50)}...`);
+      return cached;
+    }
+  }
+
+  // Execute with queue management
+  return executeWithQueue(async () => {
+    // Execute with retry logic
+    const result = await retryWithBackoff(async () => {
+      const response = await axiosInstance(url, options);
+      return response;
+    });
+
+    // Cache successful responses
+    if (cacheKey && result.status === 200) {
+      setCache(cacheKey, result);
+    }
+
+    return result;
+  });
+};
+
 const decryptPAT = (encryptedText) => {
   if (!encryptedText) return "";
 
@@ -205,24 +353,38 @@ app.get("/health", (_, res) => {
 });
 
 app.post("/getTests", async (req, res) => {
-  const { user, projectId, buildId } = req.body;
-  const artifactFolderName = "junit-report";
-  const artifactFileName = "junit.xml";
-
-  const base = `https://dev.azure.com/${process.env.AZURE_ORG}/${projectId}`;
-  const artifactsUrl = `${base}/_apis/build/builds/${buildId}/artifacts?api-version=7.1-preview.5`;
-
-  const authHeader = {
-    Authorization: "Basic " + Buffer.from(`:${decryptPAT(user.pat)}`).toString("base64"),
-  };
-
-  const extractDir = path.join(__dirname, "ExtractedReport");
-  fs.rmSync(extractDir, { recursive: true, force: true });
-  fs.mkdirSync(extractDir, { recursive: true });
-
   try {
-    // 1️⃣ Get artifacts list
-    const artifactsRes = await axios.get(artifactsUrl, { headers: authHeader });
+    const { user, projectId, buildId } = req.body;
+
+    if (!user || !user.id) {
+      return res.status(400).json({ status: 400, error: "User information required" });
+    }
+
+    // Rate limiting
+    if (!checkRateLimit(user.id)) {
+      return res.status(429).json({
+        status: 429,
+        error: "Too many requests. Please wait a moment and try again.",
+      });
+    }
+
+    const artifactFolderName = "junit-report";
+    const artifactFileName = "junit.xml";
+
+    const base = `https://dev.azure.com/${process.env.AZURE_ORG}/${projectId}`;
+    const artifactsUrl = `${base}/_apis/build/builds/${buildId}/artifacts?api-version=7.1-preview.5`;
+
+    const authHeader = {
+      Authorization: "Basic " + Buffer.from(`:${decryptPAT(user.pat)}`).toString("base64"),
+    };
+
+    const extractDir = path.join(__dirname, "ExtractedReport");
+    fs.rmSync(extractDir, { recursive: true, force: true });
+    fs.mkdirSync(extractDir, { recursive: true });
+
+    // 1️⃣ Get artifacts list with retry and caching
+    const cacheKey = getCacheKey(artifactsUrl, { buildId });
+    const artifactsRes = await azureApiCall(artifactsUrl, { method: "GET", headers: authHeader }, cacheKey);
 
     // 🔥 Take the FIRST artifact (since only one exists)
     const artifact = artifactsRes.data.value[0];
@@ -235,11 +397,14 @@ app.post("/getTests", async (req, res) => {
       });
     }
 
-    // 2️⃣ Download artifact ZIP
-    const response = await axios.get(artifact.resource.downloadUrl, {
-      headers: authHeader,
-      responseType: "stream",
-      timeout: 120000,
+    // 2️⃣ Download artifact ZIP with retry logic
+    console.log(`📥 Downloading artifact for build ${buildId}...`);
+    const response = await retryWithBackoff(async () => {
+      return await axiosInstance.get(artifact.resource.downloadUrl, {
+        headers: authHeader,
+        responseType: "stream",
+        timeout: CONFIG.AZURE_TIMEOUT,
+      });
     });
 
     // 3️⃣ Extract junit.xml directly
@@ -258,10 +423,19 @@ app.post("/getTests", async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Error in /getTests:", error.message);
-    res.json({
-      status: 500,
+
+    if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
+      return res.status(504).json({
+        status: 504,
+        data: [],
+        error: "Azure API request timed out. Please try again.",
+      });
+    }
+
+    res.status(error.response?.status || 500).json({
+      status: error.response?.status || 500,
       data: [],
-      error: error.message,
+      error: error.message || "Failed to fetch test results",
     });
   }
 });

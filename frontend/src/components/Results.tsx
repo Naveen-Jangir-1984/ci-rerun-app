@@ -132,8 +132,9 @@ export default function Results({ state, dispatch, cleanPlaywrightLogs, handleRe
       }));
 
       dispatch({ type: "SET_RESULT", payload: updatedResult });
+      update({ result: updatedResult });
     },
-    [state.result, dispatch],
+    [state.result, dispatch, update],
   );
 
   const handleSelection = useCallback((runId: number, isChecked: boolean) => {
@@ -165,13 +166,13 @@ export default function Results({ state, dispatch, cleanPlaywrightLogs, handleRe
                 <div style={{ display: "flex", flexDirection: "column", width: "100%", gap: "5px" }}>
                   <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "5px", color: "#999", fontSize: "11px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                      <div style={{ backgroundColor: "#fff", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{`Failed on ${r.build.date}`}</div>
-                      <div style={{ backgroundColor: "#fff", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{`Pipeline: ${r.build.pipelineName}`}</div>
-                      <div style={{ backgroundColor: "#fff", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{`Build #${r.build.buildId}`}</div>
+                      <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{`Failed on ${r.build.date}`}</div>
+                      <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{`Pipeline: ${r.build.pipelineName}`}</div>
+                      <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{`Build #${r.build.buildId}`}</div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                      <div style={{ backgroundColor: "#fff", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{`Reran on ${r.date}`}</div>
-                      <div style={{ backgroundColor: "#fff", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{`Environment ${r.env.toUpperCase()}`}</div>
+                      <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{`Reran on ${r.date}`}</div>
+                      <div style={{ backgroundColor: "#eee", border: "1px solid #ccc", borderRadius: "5px", padding: "0.2rem 0.5rem" }}>{`Environment ${r.env.toUpperCase()}`}</div>
                     </div>
                   </div>
                   <div style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", fontSize: "12px" }}>
@@ -179,7 +180,7 @@ export default function Results({ state, dispatch, cleanPlaywrightLogs, handleRe
                       <div style={{ backgroundColor: r.status === "Passed" ? "#ada" : "#fdd", border: "1px solid #ccc", borderRadius: "5px", padding: "0.25rem 0.5rem" }}>{r.status}</div>
                       <div style={{ lineHeight: "1.5", width: "100%" }}>
                         <span>{`${r.test.featureName} →`}</span>
-                        <span style={{ marginLeft: "5px", color: "#777", fontStyle: "italic" }}>{r.test.scenarioName}</span> {r.test.example ? <span style={{ marginLeft: "5px", backgroundColor: "#ccc", color: "#555", padding: "5px 7px", borderRadius: "5px", fontSize: "11px" }}>{r.test.example}</span> : ""}
+                        <span style={{ marginLeft: "5px", color: "#777", fontStyle: "italic" }}>{r.test.scenarioName}</span> {r.test.example ? <span style={{ marginLeft: "5px", backgroundColor: "#ddd", color: "#555", padding: "5px 7px", borderRadius: "5px", fontSize: "11px" }}>{r.test.example}</span> : ""}
                       </div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "5px", width: "auto" }}>
